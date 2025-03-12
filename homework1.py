@@ -12,6 +12,8 @@ N= rmax/h
 r = np.arange(sigma/2, rmax, h)
 l = 6
 
+#ccioaoooo
+
 ###############punto 1################
 h_bar_c = 1.973e6 #mev ångström
 m_H = 0.9383e12 #meV / c^2
