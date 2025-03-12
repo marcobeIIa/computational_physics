@@ -27,9 +27,6 @@ def V(r):
     V = 4*epsilon * ((sigma/r)**12 - (sigma/r)**6) #meV
     return V
 
-def grosk(x):
-    return x
-
 # Metodo di Numerov
 def Numerov(E,h,l,r):
     y = np.zeros(len(r))
