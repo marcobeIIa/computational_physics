@@ -1,0 +1,173 @@
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
+# %%
+import numpy as np
+import scipy
+import sys
+import math
+import scipy.special
+import scipy.constants as const
+from math import factorial
+from scipy.special import hermite
+import matplotlib.pyplot as plt
+import random
+
+
+
+# %% [markdown]
+# In order to find the values of $\alpha$ that satisfy the cusp condition we notice that
+# $$\lim_{r_{ij}\rightarrow 0}\frac{H\Psi}{\Psi}<\infty$$
+# where $H=H_0+V$ ,is equivalent to 
+# $$\lim_{r_{ij}\rightarrow 0}\frac{\Psi'}{\Psi}=\frac{1}{2}r_{ij}V$$
+# having
+# $$V=\frac{1}{2}\omega^2r_i^2+\frac{1}{r_{ij}}$$
+# Substituting in this condition the Jastrow function for antiparallel spins and Jastrow function multiplied by $r$ fo parallel spins we find 
+# $$\alpha_{\uparrow\downarrow}=\frac{1}{2}$$
+# $$\alpha_{\uparrow\uparrow}=\frac{1}{4}$$
+#
+#
+#
+#
+# Since we are interested in the cases up to $N=6$ letus consider only the lower eergy states in analitycal form, using the notation $\phi_{nlm}$
+# $$\phi_{000}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}$$ 
+# $$\phi_{01-1}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}\left(\frac{r}{\sigma}\right)e^{-i\varphi}$$ 
+# $$\phi_{011}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}\left(\frac{r}{\sigma}\right)e^{i\varphi}$$ 
+# Now we can write 
+# $$e^{i\varphi}=cos\varphi+isin\varphi=\frac{x}{\sqrt{x^2+y^2}}+i\frac{y}{\sqrt{x^2+y^2}}$$
+# $$e^{-i\varphi}=cos\varphi-isin\varphi=\frac{x}{\sqrt{x^2+y^2}}-i\frac{y}{\sqrt{x^2+y^2}}$$
+# And so we find
+# $$\phi_{000}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}$$ 
+# $$\phi_{01-1}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{\sqrt{x^2+y^2}}{\sigma}\right)\left(\frac{x}{\sqrt{x^2+y^2}}-i\frac{y}{\sqrt{x^2+y^2}}\right)=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{1}{\sigma}\right)\left(x-iy\right)$$ 
+# $$\phi_{011}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{\sqrt{x^2+y^2}}{\sigma}\right)\left(\frac{x}{\sqrt{x^2+y^2}}+i\frac{y}{\sqrt{x^2+y^2}}\right)=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{1}{\sigma}\right)\left(x+iy\right)$$ 
+#
+# In the end we can construct two new orbitals, namely
+# $$\chi_+=\frac{\phi_{011}+\phi_{01-1}}{2}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}x$$
+# $$\chi_-=\frac{\phi_{011}-\phi_{01-1}}{2i}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}y$$
+
+# %%
+N=6
+omega=1
+
+
+# %%
+def Slaterdet(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
+    A = [[(1/math.factorial(N))*phi(x1,y1,s), (1/math.factorial(N))*chip(x1,y1,s), (1/math.factorial(N))*chim(x1,y1,s)], 
+         [(1/math.factorial(N))*phi(x2,y2,s), (1/math.factorial(N))*chip(x2,y2,s), (1/math.factorial(N))*chim(x2,y2,s)],
+         [(1/math.factorial(N))*phi(x3,y3,s), (1/math.factorial(N))*chip(x3,y3,s), (1/math.factorial(N))*chim(x3,y3,s)]] 
+    return np.linalg.det(A)
+
+
+# %%
+def Slaterinv(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
+    A = [[(1/math.factorial(N))*phi(x1,y1,s), (1/math.factorial(N))*chip(x1,y1,s), (1/math.factorial(N))*chim(x1,y1,s)], 
+         [(1/math.factorial(N))*phi(x2,y2,s), (1/math.factorial(N))*chip(x2,y2,s), (1/math.factorial(N))*chim(x2,y2,s)],
+         [(1/math.factorial(N))*phi(x3,y3,s), (1/math.factorial(N))*chip(x3,y3,s), (1/math.factorial(N))*chim(x3,y3,s)]] 
+    
+    return np.linalg.inv(A)
+
+
+# %%
+#Metropolis
+def Metropolis(x01,y01,x02,y02,x03,y03, delta, phi, chip, chim, s,counter, acc):
+    a1=random.uniform(0,1)
+    x1= x01+delta*(a1-0.5)
+    b1=random.uniform(0,1)
+    y1= y01+delta*(b1-0.5)
+    a2=random.uniform(0,1)
+    x2= x02+delta*(a2-0.5)
+    b2=random.uniform(0,1)
+    y2= y02+delta*(b2-0.5)
+    a3=random.uniform(0,1)
+    x3= x03+delta*(a3-0.5)
+    b3=random.uniform(0,1)
+    y3= y03+delta*(b3-0.5)
+    p=Slaterdet(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim)**2/Slaterdet(N,s,x01,y01,x02,y02,x03,y03,phi,chip,chim)**2
+    if p>1:
+        x01=x1
+        y01=y1
+        x02=x2
+        y02=y2
+        x03=x3
+        y03=y3
+        acc+=1
+    else:
+        xi=random.uniform(0,1)
+        if p>xi:
+            x01=x1
+            y01=y1
+            x02=x2
+            y02=y2
+            x03=x3
+            y03=y3
+            acc+=1
+
+    counter+=1
+    return x01,y01,x02,y02,x03,y03, acc, counter
+
+
+
+def adjust_delta(delta, acceptance_rate):
+    if acceptance_rate > 0.6:
+        delta *= 1.1  # Increase delta by 10%
+    elif acceptance_rate < 0.4:
+        delta *= 0.9  # Decrease delta by 10%
+    return delta
+
+
+def phi0(x, y, s):
+    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))
+
+def chiplus(x, y, s):
+    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*x
+
+def chiminus(x, y, s):
+    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*y
+
+def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
+  acc_rate=1
+  while acc_rate>0.6 or acc_rate<0.4:
+    acc,counter=0,0
+    for i in range(N_delta):
+      x01,y01,x02,y02,x03,y03, acc,counter = Metropolis(x01,y01,x02,y02,x03,y03, delta, phi0, chiplus,chiminus, s,counter, acc)
+    acc_rate=acc/counter
+    delta = adjust_delta(delta, acc_rate)
+
+  return delta
+
+
+# %%
+acc, counter=0,0
+x01=random.uniform(0,1)
+y01=random.uniform(0,1)
+x02=random.uniform(0,1)
+y02=random.uniform(0,1)
+x03=random.uniform(0,1)
+y03=random.uniform(0,1)
+delta=1
+passi=10
+Neq=int(passi*1/50)
+N_delta=10000
+pos, acc_list=[],[]
+s=1
+
+# %%
+delta = delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter)
+
+for i in range(passi):
+    x01,y01,x02,y02,x03,y03, acc,counter = Metropolis(x01,y01,x02,y02,x03,y03, delta, phi0, chiplus,chiminus, s,counter, acc)
+    #pos.append(x0)
+    acc_list.append(acc/counter)
+
