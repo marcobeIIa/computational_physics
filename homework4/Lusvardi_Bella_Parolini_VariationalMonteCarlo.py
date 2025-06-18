@@ -26,7 +26,6 @@ import matplotlib.pyplot as plt
 import random
 
 
-
 # %% [markdown]
 # In order to find the values of $\alpha$ that satisfy the cusp condition we notice that
 # $$\lim_{r_{ij}\rightarrow 0}\frac{H\Psi}{\Psi}<\infty$$
@@ -41,7 +40,7 @@ import random
 #
 #
 #
-# Since we are interested in the cases up to $N=6$ letus consider only the lower eergy states in analitycal form, using the notation $\phi_{nlm}$
+# Since we are interested in the cases up to $N=6$ let us consider only the lower energy states in analitycal form, using the notation $\phi_{nlm}$
 # $$\phi_{000}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}$$ 
 # $$\phi_{01-1}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}\left(\frac{r}{\sigma}\right)e^{-i\varphi}$$ 
 # $$\phi_{011}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{r^2}{2\sigma^2}}\left(\frac{r}{\sigma}\right)e^{i\varphi}$$ 
@@ -78,54 +77,61 @@ def Slaterinv(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
     
     return np.linalg.inv(A)
 
+# %%ctorial(N))*phi0(r[0],r[1],s), (1/math.factorial(N))*chip(r[0],r[1],s)], 
+            [(1/math.factorial(N))*phi0(r[2],r[3],s), (1/math.factorial(N))*chip(r[2],r[3],s)]]
+        return np.linalg.det(A)*phi0(r[4],r[6],s)
+    elif N==4:
+        A= [[(1/math.factorial(N))*phi0(r[0],r[1],s), (1/math.factorial(N))*chip(r[0],r[1],s)], 
+            [(1/math.factorial(N))*phi0(r[2],r[3],s), (1/math.factorial(N))*chip(r[2],r[3],s)]]
+        B= [[(1/math.factorial(N))*phi0(r[4],r[5],s), (1/math.factorial(N))*chip(r[4],r[5],s)], 
+            [(1/math.factorial(N))*phi0(r[6],r[7],s), (1/math.factorial(N))*chip(r[6],r[7],s)]]
+        return np.linalg.det(A)*np.linalg.det(B)
+    elif N==5:
+        A = [[(1/math.factorial(N))*phi0(r[0],r[1],s), (1/math.factorial(N))*chip(r[0],r[1],s), (1/math.factorial(N))*chim(r[0],r[1],s)], 
+             [(1/math.factorial(N))*phi0(r[2],r[3],s), (1/math.factorial(N))*chip(r[2],r[3],s), (1/math.factorial(N))*chim(r[2],r[3],s)],
+             [(1/math.factorial(N))*phi0(r[4],r[5],s), (1/math.factorial(N))*chip(r[4],r[5],s), (1/math.factorial(N))*chim(r[4],r[5],s)]]
+        B= [[(1/math.factorial(N))*phi0(r[6],r[7],s), (1/math.factorial(N))*chip(r[6],r[7],s)], 
+            [(1/math.factorial(N))*phi0(r[8],r[9],s), (1/math.factorial(N))*chip(r[8],r[9],s)]]
+        return np.linalg.det(A)*np.linalg.det(B)
+    elif N==6:
+        A = [[(1/math.factorial(N))*phi0(r[0],r[1],s), (1/math.factorial(N))*chip(r[0],r[1],s), (1/math.factorial(N))*chim(r[0],r[1],s)], 
+             [(1/math.factorial(N))*phi0(r[2],r[3],s), (1/math.factorial(N))*chip(r[2],r[3],s), (1/math.factorial(N))*chim(r[2],r[3],s)],
+             [(1/math.factorial(N))*phi0(r[4],r[5],s), (1/math.factorial(N))*chip(r[4],r[5],s), (1/math.factorial(N))*chim(r[4],r[5],s)]]
+        B = [[(1/math.factorial(N))*phi0(r[6],r[7],s), (1/math.factorial(N))*chip(r[6],r[7],s), (1/math.factorial(N))*chim(r[6],r[7],s)], 
+             [(1/math.factorial(N))*phi0(r[8],r[9],s), (1/math.factorial(N))*chip(r[8],r[9],s), (1/math.factorial(N))*chim(r[8],r[9],s)],
+             [(1/math.factorial(N))*phi0(r[10],r[11],s), (1/math.factorial(N))*chip(r[10],r[11],s), (1/math.factorial(N))*chim(r[10],r[11],s)]]
+        return np.linalg.det(A)*np.linalg.det(B)
+        
+
 
 # %%
 #Metropolis
-def Metropolis(x01,y01,x02,y02,x03,y03, delta, phi, chip, chim, s,counter, acc):
-    a1=random.uniform(0,1)
-    x1= x01+delta*(a1-0.5)
-    b1=random.uniform(0,1)
-    y1= y01+delta*(b1-0.5)
-    a2=random.uniform(0,1)
-    x2= x02+delta*(a2-0.5)
-    b2=random.uniform(0,1)
-    y2= y02+delta*(b2-0.5)
-    a3=random.uniform(0,1)
-    x3= x03+delta*(a3-0.5)
-    b3=random.uniform(0,1)
-    y3= y03+delta*(b3-0.5)
-    p=Slaterdet(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim)**2/Slaterdet(N,s,x01,y01,x02,y02,x03,y03,phi,chip,chim)**2
+def Metropolis(r,N, delta, psi, s,phi0,chip,chim,counter, acc):
+    rn=r
+    a=random.uniform(0,1)
+    b=random.randint(0,2*N-1)
+    rn[b]= r[b]+delta*(a-0.5)
+    p=psi(phi0,chip,chim,N,r,s)**2/psi(phi0,chip,chim,N,r,s)**2
     if p>1:
-        x01=x1
-        y01=y1
-        x02=x2
-        y02=y2
-        x03=x3
-        y03=y3
+        r[b]= rn[b]
         acc+=1
     else:
         xi=random.uniform(0,1)
         if p>xi:
-            x01=x1
-            y01=y1
-            x02=x2
-            y02=y2
-            x03=x3
-            y03=y3
+            r[b]= rn[b]
             acc+=1
 
     counter+=1
-    return x01,y01,x02,y02,x03,y03, acc, counter
+    return r, acc, counter
 
 
-
+# %%
 def adjust_delta(delta, acceptance_rate):
     if acceptance_rate > 0.6:
         delta *= 1.1  # Increase delta by 10%
     elif acceptance_rate < 0.4:
         delta *= 0.9  # Decrease delta by 10%
     return delta
-
 
 def phi0(x, y, s):
     return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))
@@ -137,37 +143,47 @@ def chiminus(x, y, s):
     return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*y
 
 def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
+def delta_choice(r,N,delta,s,N_delta,counter):
   acc_rate=1
   while acc_rate>0.6 or acc_rate<0.4:
     acc,counter=0,0
     for i in range(N_delta):
-      x01,y01,x02,y02,x03,y03, acc,counter = Metropolis(x01,y01,x02,y02,x03,y03, delta, phi0, chiplus,chiminus, s,counter, acc)
+      x0, acc,counter = Metropolis(r,N, delta, psi, s,phi0,chiplus,chiminus,counter, acc)
     acc_rate=acc/counter
     delta = adjust_delta(delta, acc_rate)
+    print(delta)
 
   return delta
 
 
 # %%
 acc, counter=0,0
-x01=random.uniform(0,1)
-y01=random.uniform(0,1)
-x02=random.uniform(0,1)
-y02=random.uniform(0,1)
-x03=random.uniform(0,1)
-y03=random.uniform(0,1)
+x0=random.uniform(0,1)
 delta=1
-passi=10
+passi=1000
 Neq=int(passi*1/50)
-N_delta=10000
+N_delta=1000
 pos, acc_list=[],[]
 s=1
+r=np.zeros(12)
+for i in range(len(r)):
+    r[i]=random.uniform(0,7)
+    
+N=2
 
 # %%
-delta = delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter)
+delta = delta_choice(r,N,delta,s,N_delta,0)
+
 
 for i in range(passi):
-    x01,y01,x02,y02,x03,y03, acc,counter = Metropolis(x01,y01,x02,y02,x03,y03, delta, phi0, chiplus,chiminus, s,counter, acc)
-    #pos.append(x0)
+    x0, acc, counter = Metropolis(r,N, delta, psi, s,phi0,chiplus,chiminus,counter, acc)
+    pos.append(x0)
     acc_list.append(acc/counter)
 
+
+
+# %%
+plt.plot(np.array(range(passi)),acc_list)
+plt.title('Acceptance rate')
+
+# %%
