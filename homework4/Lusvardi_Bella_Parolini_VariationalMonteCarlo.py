@@ -142,7 +142,6 @@ def chiplus(x, y, s):
 def chiminus(x, y, s):
     return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*y
 
-def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 def delta_choice(r,N,delta,s,N_delta,counter):
   acc_rate=1
   while acc_rate>0.6 or acc_rate<0.4:
