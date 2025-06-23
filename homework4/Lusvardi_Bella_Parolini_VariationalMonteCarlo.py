@@ -144,8 +144,108 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 
   return delta
 
+# + [markdown] magic_args="kinetic energy calculation"
+# ## kinetic energy calculation
+# Using
+# \begin{align*}
+#   \nabla ^2 (fg) = \left( \nabla ^2 f    \right) g + 2\boldsymbol{\nabla}f \cdot 
+#   \boldsymbol{\nabla}g + f \nabla ^2g
+# \end{align*}
+#    The kinetic energy
+#    \begin{align*}
+#  \nabla ^2 \Psi &=  \nabla ^2 \left(F D_\uparrow D_\downarrow\right)\nonumber 
+#  \end{align}
+# $$
+#        \nabla^2 \Psi= \sum_i \left[   \underbrace{\left(\nabla _i ^2F\right)}_{\text{1}}D_\uparrow D_\downarrow +
+#        2\underbrace{\boldsymbol{\nabla}_i F \cdot  \boldsymbol{\nabla}_i (D_\uparrow
+#        D_\downarrow)}_{\text{2}} +
+#        F(
+#        \underbrace{(\nabla ^2_i D_\uparrow) D_\downarrow + D_\uparrow \nabla_i ^2
+#        D_\downarrow)}_{\text{3}}\right]
+# $$
+# The first term
+# \begin{align*}
+#     (1) = \prod_{i<j}\left[\frac{-2a_{ij}b_{ij}}{(1+b_{ij}r_{ij})^{3}} +
+#     \frac{a_{ij}^2}{(1+b_{ij}r_{ij})^{4}}+
+#     \frac{1}{r_{ij}}\frac{a_{ij}}{(1+b_{ij}r_{ij})^2}\right]e^{\frac{a_{ij}r_{ij}}{1+b_{ij}r_{ij}}}
+# \end{align*}
+# then 
+# \begin{align*}
+#     \boldsymbol{\nabla} F \cdot \boldsymbol{\nabla} \left(D_\uparrow D_\downarrow\right)
+#     &= 2\prod_{i\neq j}\hat{\textbf{x}}_{jk} \frac{a_{ij}}{(1+b_{ij}r_{ij})^2} \exp\{...\} \cdot
+#     \boldsymbol{\nabla}(D_\uparrow D_\downarrow)
+# \end{align*}
+# and the gradient of Slater can be computed from known matrix calculus relations:
+# \begin{align*}
+# \frac{1}{\left|D\right|}\boldsymbol{\nabla}_i \left|D(\textbf{R})\right|    &= \sum _j
+# \boldsymbol{\nabla}_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})\nonumber \\ 
+# \frac{1}{\left|D\right|}\nabla ^2_i \left|D(\textbf{R})\right|    &= \sum _j
+# \nabla^2_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})
+# \end{align*}
+# and the gradient of a single wavefunction
+# \begin{align*}
+#     \boldsymbol{\nabla}_i \phi_{000} (r_i)& = \frac{\textbf{r}_i}{\sigma^2}\phi_{000}\nonumber \\ 
+# \boldsymbol{\nabla}_i \phi_{01 \pm } &= \begin{bmatrix} x_i + \sigma \\ y_i \pm i\sigma
+# \end{bmatrix} \frac{1}{\sigma^2} \phi_{01 \pm }
+# \end{align*}
+# and the laplacians
+# \begin{align*}
+#    \nabla ^2 \phi_{000} &= \left(\frac{2r}{\sigma^2} +
+#    \left(\frac{r}{\sigma^2}\right)^2\right)\phi_{000}\nonumber \\ 
+#    \nabla ^2 \phi_{01 \pm }&= \frac{1}{\sqrt{\pi \sigma^2}} \frac{1}{\sigma^3}\left[2 +
+#    \frac{x}{\sigma^2} \left(1+\frac{x}{\sigmas^2}\right) + \frac{y}{\sigma^2}\left(\pm i +
+#    \frac{y}{\sigma^2}\right)\right]e^{\frac{x^2+y^2}{2\sigma^2}}
+# \end{align*}
+#
+# +
+# here i will define all functions to take as input
+# N = number of particles
+# R = [[x1, y2],...,[xN, yN]]
+# A = [[a11,...,a12],...,[aN1,..., aNN]]
+# B = [[b11,...,b12],...,[bN1,..., bNN]]
+
+
+def jastrow_laplacian(N,R,A,B):
+    '''
+    This function calculates the laplacian of jastrow, or (1)
+    '''
+    out = 1
+    for i in range(N):
+        for j in range(i+1,N):
+            rij = np.linalg.norm(R[i] - R[j])
+            aij = A[i][j]
+            bij = B[i][j]
+            x = 1+bij*rij
+            out *= (-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(-aij*rij / x)
+    return out
+
+def slater_gradient(N,R,D,det):
+    ''' 
+    This function calculates the gradient of the Slater determinant
+    D is the inverse of the Slater determinant matrix
+    det is the Slater determinant itself
+    i wanna go home
+    '''
+
+
+def gradient_gradient_term(N,R,A,B):
+    '''
+    This function calculates the gradient gradient term of jastrow, or (2)
+    '''
+    out = 0
+    for i in range(N):
+        for j in range(i+1,N):
+            rij = np.linalg.norm(R[i] - R[j])
+            aij = A[i][j]
+            bij = B[i][j]
+            x = 1+bij*rij
+            jastrow_prefactor = aij/ x**2 * np.exp(-aij*rij / x)
+            jastrow_piece = jastrow_prefactor* (R[i]-R[j]) #this guy should be a vector
+    return out
+
 
 # -
+
 
 acc, counter=0,0
 x01=random.uniform(0,1)
