@@ -68,12 +68,32 @@ def Slaterdet(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
     return np.linalg.det(A)
 
 
+
+# +
 def Slaterinv(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
     A = [[(1/math.factorial(N))*phi(x1,y1,s), (1/math.factorial(N))*chip(x1,y1,s), (1/math.factorial(N))*chim(x1,y1,s)], 
          [(1/math.factorial(N))*phi(x2,y2,s), (1/math.factorial(N))*chip(x2,y2,s), (1/math.factorial(N))*chim(x2,y2,s)],
          [(1/math.factorial(N))*phi(x3,y3,s), (1/math.factorial(N))*chip(x3,y3,s), (1/math.factorial(N))*chim(x3,y3,s)]] 
     
     return np.linalg.inv(A)
+
+def safe_invert_matrix_mb(A, rcond=1e-15):
+    """
+    Computes a pseudoinverse if A is near-singular.
+
+    Parameters:
+    - A : (N x N) NumPy array
+    - rcond : Regularization threshold
+
+    Returns:
+    - A_inv : Inverse or pseudoinverse of A
+    """
+    try:
+        return np.linalg.inv(A)
+    except np.linalg.LinAlgError:
+        print("Matrix is singular or ill-conditioned. Using pseudoinverse.")
+        return np.linalg.pinv(A, rcond=rcond)
+
 
 
 # +
@@ -152,9 +172,9 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 #   \boldsymbol{\nabla}g + f \nabla ^2g
 # \end{align*}
 #    The kinetic energy
-#    \begin{align*}
-#  \nabla ^2 \Psi &=  \nabla ^2 \left(F D_\uparrow D_\downarrow\right)\nonumber 
-#  \end{align}
+# \begin{align}
+#  \nabla ^2 \Psi &=  \nabla ^2 \left(F D_\uparrow D_\downarrow\right)
+# \end{align}
 # $$
 #        \nabla^2 \Psi= \sum_i \left[   \underbrace{\left(\nabla _i ^2F\right)}_{\text{1}}D_\uparrow D_\downarrow +
 #        2\underbrace{\boldsymbol{\nabla}_i F \cdot  \boldsymbol{\nabla}_i (D_\uparrow
@@ -193,10 +213,13 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 #    \nabla ^2 \phi_{000} &= \left(\frac{2r}{\sigma^2} +
 #    \left(\frac{r}{\sigma^2}\right)^2\right)\phi_{000}\nonumber \\ 
 #    \nabla ^2 \phi_{01 \pm }&= \frac{1}{\sqrt{\pi \sigma^2}} \frac{1}{\sigma^3}\left[2 +
-#    \frac{x}{\sigma^2} \left(1+\frac{x}{\sigmas^2}\right) + \frac{y}{\sigma^2}\left(\pm i +
+#    \frac{x}{\sigma^2} \left(1+\frac{x}{\sigma^2}\right) + \frac{y}{\sigma^2}\left(\pm i +
 #    \frac{y}{\sigma^2}\right)\right]e^{\frac{x^2+y^2}{2\sigma^2}}
 # \end{align*}
 #
+# -
+
+
 # +
 # here i will define all functions to take as input
 # N = number of particles
@@ -204,8 +227,65 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 # A = [[a11,...,a12],...,[aN1,..., aNN]]
 # B = [[b11,...,b12],...,[bN1,..., bNN]]
 
+def A_matrix_creator_mb(N, R, sigma, phi, chip, chim):
+    """
+    creates the matrix from which we compute the slater determinant
 
-def jastrow_laplacian(N,R,A,B):
+    Parameters:
+    - N      : Number of particles
+    - R      : Array of shape (N, 2), each row is [x, y] of particle
+    - sigma  : Sigma parameter in h.o. wavefunction
+    - phi    : Callable: phi(x, y, spin)
+    - chip   : Callable: chip(x, y, spin)
+    - chim   : Callable: chim(x, y, spin)
+
+    returns :
+    - A[i,j] = phi_j(x_i, y_i, spin_i) 
+    """
+    basis_functions = [phi, chip, chim]
+    num_basis = len(basis_functions)
+    if N > num_basis:
+        raise ValueError("not enough basis functions for n particles")
+
+    A = np.zeros((N, N), dtype=float)
+
+    for i in range(N):  # row: particle
+        x, y = R[i]
+        for j in range(N):  # col: basis function
+            A[i, j] = basis_functions[j](x, y, sigma)
+
+def slater_det_mb(N, R, sigma, phi, chip, chim, normalised = False):
+    """
+    Compute the Slater determinant for N particles.
+
+    Parameters:
+    - N      : Number of particles
+    - R      : Array of shape (N, 2), each row is [x, y] of particle
+    - sigma  : Sigma parameter for the harmonic oscillator wavefunction
+    - phi    : Callable: phi(x, y, spin)
+    - chip   : Callable: chip(x, y, spin)
+    - chim   : Callable: chim(x, y, spin)
+
+    Returns:
+    - det    : Value of the Slater determinant
+    """
+    basis_functions = [phi, chip, chim]
+    num_basis = len(basis_functions)
+
+    if N > num_basis:
+        raise ValueError("not enough basis functions for N particles")
+
+    A = A_matrix_creator(N, R, sigma, phi, chip, chim)
+
+    # Normalization factor, i dont wanna normalise because im scared of big numbers
+    if not normalised:
+        normalisation = 1
+    else: 
+        normalisation = 1 / math.factorial(N)
+    return normalisation * np.linalg.det(A)
+
+
+def jastrow_laplacian_mb(N,R,A,B):
     '''
     This function calculates the laplacian of jastrow, or (1)
     '''
@@ -219,16 +299,45 @@ def jastrow_laplacian(N,R,A,B):
             out *= (-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(-aij*rij / x)
     return out
 
-def slater_gradient(N,R,D,det):
+def gradient_phi_mb(alpha, r,sigma):
+    '''
+    alpha =  [n,l,m] orbital nmbers
+    r= [x,y] = coordinates of i-th particle
+    sigma the usual
+    '''
+    x,y = r
+    n,l,m = alpha
+    factor = np.exp((x**2+y**2)/(2*alpha[0]**2))/ sigma**2
+    if alpha == [0,0,0]:
+        return np.array(x* factor,
+                         y* factor)
+    elif [n,l] == [0,1]:
+        return np.array((x+sigma)* factor,
+                         (y+1j*m*sigma)* factor)
+
+def gradient_chi_mb(m, r,sigma):
+    if m == 1:
+        return (gradient_phi_mb([0,1,1], r, sigma) + gradient_phi_mb([0,-1,1], r, sigma))/2
+    elif m ==-1:
+        return (gradient_phi_mb([0,1,1], r, sigma) - gradient_phi_mb([0,-1,1], r, sigma))/(2j)
+    else:
+        print("Invalid value for m = +-1")
+
+
+def slater_gradient_mb(N,R,A_inv,i,det,sigma):
     ''' 
     This function calculates the gradient of the Slater determinant
-    D is the inverse of the Slater determinant matrix
-    det is the Slater determinant itself
-    i wanna go home
+    A_inv - the inverse of the Slater matrix
+    i - i-th partiche wrt which we're computing the gradient 
+    det - the Slater determinant itself
     '''
+    out = np.zeros((1, 2))
+    alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
+    for j in range(N):
+        out += A_inv[i][j] * gradient_phi_mb(alpha[j], R[i], sigma)
 
 
-def gradient_gradient_term(N,R,A,B):
+def gradient_gradient_term_mb(N,R,A,B):
     '''
     This function calculates the gradient gradient term of jastrow, or (2)
     '''
