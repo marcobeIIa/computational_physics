@@ -233,4 +233,4 @@ def slater_laplacian_term(M, R, A_inv, det, sigma,omega=1):
             out += A_inv[i][j] * (-2*eigenvalue+omega**2 *r_i**2) * single_particle_wf(alpha[j][2], R[i], sigma)
     return out
 
-def kinetic_energy_integrand():
+#def kinetic_energy_integrand():
