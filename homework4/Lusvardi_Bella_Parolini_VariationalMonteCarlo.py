@@ -54,8 +54,8 @@ print('tiocfaidh ar la v5')
 # $$\phi_{011}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{\sqrt{x^2+y^2}}{\sigma}\right)\left(\frac{x}{\sqrt{x^2+y^2}}+i\frac{y}{\sqrt{x^2+y^2}}\right)=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\left(\frac{1}{\sigma}\right)\left(x+iy\right)$$ 
 #
 # In the end we can construct two new orbitals, namely
-# $$\chi_+=\frac{\phi_{011}+\phi_{01-1}}{2}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}x$$
-# $$\chi_-=\frac{\phi_{011}-\phi_{01-1}}{2i}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}y$$
+# $$\chi_+=\frac{\phi_{011}+\phi_{01-1}}{2}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\frac{x}{\sigma}$$
+# $$\chi_-=\frac{\phi_{011}-\phi_{01-1}}{2i}=\frac{1}{\sqrt{\pi\sigma^2}}e^{\frac{x^2+y^2}{2\sigma^2}}\frac{y}{\sigma}$$
 
 N=6
 omega=1
@@ -148,10 +148,10 @@ def phi0(x, y, s):
     return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))
 
 def chiplus(x, y, s):
-    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*x
+    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*x/s
 
 def chiminus(x, y, s):
-    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*y
+    return (1/np.sqrt(np.pi*s**2))*math.exp((x**2+y**2)/(2*s**2))*y/s
 
 def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
   acc_rate=1
@@ -220,140 +220,7 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 # -
 
 
-# +
-# here i will define all functions to take as input
-# N = number of particles
-# R = [[x1, y2],...,[xN, yN]]
-# A = [[a11,...,a12],...,[aN1,..., aNN]]
-# B = [[b11,...,b12],...,[bN1,..., bNN]]
 
-def A_matrix_creator_mb(N, R, sigma, phi, chip, chim):
-    """
-    creates the matrix from which we compute the slater determinant
-
-    Parameters:
-    - N      : Number of particles
-    - R      : Array of shape (N, 2), each row is [x, y] of particle
-    - sigma  : Sigma parameter in h.o. wavefunction
-    - phi    : Callable: phi(x, y, spin)
-    - chip   : Callable: chip(x, y, spin)
-    - chim   : Callable: chim(x, y, spin)
-
-    returns :
-    - A[i,j] = phi_j(x_i, y_i, spin_i) 
-    """
-    basis_functions = [phi, chip, chim]
-    num_basis = len(basis_functions)
-    if N > num_basis:
-        raise ValueError("not enough basis functions for n particles")
-
-    A = np.zeros((N, N), dtype=float)
-
-    for i in range(N):  # row: particle
-        x, y = R[i]
-        for j in range(N):  # col: basis function
-            A[i, j] = basis_functions[j](x, y, sigma)
-
-def slater_det_mb(N, R, sigma, phi, chip, chim, normalised = False):
-    """
-    Compute the Slater determinant for N particles.
-
-    Parameters:
-    - N      : Number of particles
-    - R      : Array of shape (N, 2), each row is [x, y] of particle
-    - sigma  : Sigma parameter for the harmonic oscillator wavefunction
-    - phi    : Callable: phi(x, y, spin)
-    - chip   : Callable: chip(x, y, spin)
-    - chim   : Callable: chim(x, y, spin)
-
-    Returns:
-    - det    : Value of the Slater determinant
-    """
-    basis_functions = [phi, chip, chim]
-    num_basis = len(basis_functions)
-
-    if N > num_basis:
-        raise ValueError("not enough basis functions for N particles")
-
-    A = A_matrix_creator(N, R, sigma, phi, chip, chim)
-
-    # Normalization factor, i dont wanna normalise because im scared of big numbers
-    if not normalised:
-        normalisation = 1
-    else: 
-        normalisation = 1 / math.factorial(N)
-    return normalisation * np.linalg.det(A)
-
-
-def jastrow_laplacian_mb(N,R,A,B):
-    '''
-    This function calculates the laplacian of jastrow, or (1)
-    '''
-    out = 1
-    for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            aij = A[i][j]
-            bij = B[i][j]
-            x = 1+bij*rij
-            out *= (-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(-aij*rij / x)
-    return out
-
-def gradient_phi_mb(alpha, r,sigma):
-    '''
-    alpha =  [n,l,m] orbital nmbers
-    r= [x,y] = coordinates of i-th particle
-    sigma the usual
-    '''
-    x,y = r
-    n,l,m = alpha
-    factor = np.exp((x**2+y**2)/(2*alpha[0]**2))/ sigma**2
-    if alpha == [0,0,0]:
-        return np.array(x* factor,
-                         y* factor)
-    elif [n,l] == [0,1]:
-        return np.array((x+sigma)* factor,
-                         (y+1j*m*sigma)* factor)
-
-def gradient_chi_mb(m, r,sigma):
-    if m == 1:
-        return (gradient_phi_mb([0,1,1], r, sigma) + gradient_phi_mb([0,-1,1], r, sigma))/2
-    elif m ==-1:
-        return (gradient_phi_mb([0,1,1], r, sigma) - gradient_phi_mb([0,-1,1], r, sigma))/(2j)
-    else:
-        print("Invalid value for m = +-1")
-
-
-def slater_gradient_mb(N,R,A_inv,i,det,sigma):
-    ''' 
-    This function calculates the gradient of the Slater determinant
-    A_inv - the inverse of the Slater matrix
-    i - i-th partiche wrt which we're computing the gradient 
-    det - the Slater determinant itself
-    '''
-    out = np.zeros((1, 2))
-    alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
-    for j in range(N):
-        out += A_inv[i][j] * gradient_phi_mb(alpha[j], R[i], sigma)
-
-
-def gradient_gradient_term_mb(N,R,A,B):
-    '''
-    This function calculates the gradient gradient term of jastrow, or (2)
-    '''
-    out = 0
-    for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            aij = A[i][j]
-            bij = B[i][j]
-            x = 1+bij*rij
-            jastrow_prefactor = aij/ x**2 * np.exp(-aij*rij / x)
-            jastrow_piece = jastrow_prefactor* (R[i]-R[j]) #this guy should be a vector
-    return out
-
-
-# -
 
 
 acc, counter=0,0
