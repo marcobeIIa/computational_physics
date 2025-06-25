@@ -11,8 +11,8 @@ def A_matrix_creator(M, R, sigma, phi, chip, chim):
     creates the matrix from which we compute the slater determinant
 
     Parameters:
-    - M      : Number of orbitals
-    - R      : Array of shape (N, 2), each row is [x, y] of particle
+    - M      : Number of particles of given spin
+    - R      : Array of shape (M, 2), each row is [x, y] of particle
     - sigma  : Sigma parameter in h.o. wavefunction
     - phi    : Callable: phi(x, y, spin)
     - chip   : Callable: chip(x, y, spin)
@@ -35,11 +35,11 @@ def A_matrix_creator(M, R, sigma, phi, chip, chim):
 
 def slater_det(M, R, sigma, phi, chip, chim, normalised = False):
     """
-    Compute the Slater determinant for N orbitals.
+    Compute the Slater determinant for M particles.
 
     Parameters:
-    - M      : Number of orbitalss
-    - R      : Array of shape (N, 2), each row is [x, y] of particle
+    - M      : Number of particles 
+    - R      : Array of shape (M, 2), each row is [x, y] of particle
     - sigma  : Sigma parameter for the harmonic oscillator wavefunction
     - phi    : Callable: phi(x, y, spin)
     - chip   : Callable: chip(x, y, spin)
@@ -129,7 +129,7 @@ def single_particle_wf(m,r,sigma,use_chi=True):
     else:
         return phi000*(x+1j*m*y)/sigma 
 
-def slater_f_ij(r_ij, spin_alignment, b_ij):
+def jastrow_f_ij(r_ij, spin_alignment, b_ij):
     '''
     r_ij             :  relative position between i, j particles
     spin_alignmnent  :  1 if i, j particles have the same spin, 0 if they have opposite spins
@@ -137,16 +137,36 @@ def slater_f_ij(r_ij, spin_alignment, b_ij):
     a_ij = 1/2 - 1/4*spin_alignment
     return np.exp(a_ij * r_ij / (1+ b_ij * r_ij) )
 
-def total_wf(N, R, sigma, use_chi=True):
+def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, paramagnetic = False):
     '''
     N        :  number of particles
+    N_up     :  number of up-spin particles
     R        :  [[x1,y1],...,[xN,yN]] coordinates of particles
+    b_par,
+    b_orth   : jastrow parameters
     sigma    :  the usual
     use_chi  :  True if you want to use the chi_m wavefunction, False if you want to use phi_nlm
     returns:
     - total wavefunction of the system, i.e. product of single particle wavefunctions times the jastrow 
     '''
-    return "halp"
+    assert N - N_up >= 0, "N_up cannot be greater than N"
+    if N != 4:
+        N_down = N - N_up
+        det_up = slater_det(N_up, R[:N_up], sigma, single_particle_wf, gradient_chi, gradient_chi)
+        det_down = slater_det(N_down, R[N_up:], sigma, single_particle_wf, gradient_chi, gradient_chi)
+        jastrow_factor = 1.
+        for i in range(N):
+            for j in range(i+1, N):
+                r_ij = np.linalg.norm(R[i] - R[j])
+                spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+                b_ij = b_par * spin_alignment + b_orth * (1 - spin_alignment)
+                jastrow_factor *= jastrow_f_ij(r_ij, spin_alignment, b_ij)
+        psi = det_up * det_down * jastrow_factor
+        return psi, det_up,det_down
+    else:
+        raise ValueError("to be implemented.")
+
+
 
 def gradient_single_particle_wf(m, r, sigma, use_chi=True):
     '''
@@ -233,4 +253,7 @@ def slater_laplacian_term(M, R, A_inv, det, sigma,omega=1):
             out += A_inv[i][j] * (-2*eigenvalue+omega**2 *r_i**2) * single_particle_wf(alpha[j][2], R[i], sigma)
     return out
 
-#def kinetic_energy_integrand():
+def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,use_chi=True,paramagnetic=False):
+    psi,det_up,det_down = total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi, paramagnetic)
+    grad_term_1 = 
+    N_down = N - N_up
