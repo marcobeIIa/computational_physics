@@ -217,11 +217,36 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 #    \frac{y}{\sigma^2}\right)\right]e^{\frac{x^2+y^2}{2\sigma^2}}
 # \end{align*}
 #
+
+
+# +
+import importlib
+import kinetic_energy as kin
+import numpy as np
+importlib.reload(kinetic_energy)
+# Parameters
+N = 3
+N_up = 2
+sigma = 1
+b_par = 1
+b_orth = 1
+omega = 1
+use_chi = True
+
+# Define a grid of positions (e.g., 3 particles in 2D)
+R = np.array([
+    [2.0, 3.0],
+    [1.0, 2.0],
+    [0.5, 0.866]  # roughly equilateral triangle
+])
+from functools import partial
+
+kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
+wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi, return_A=False)
+kinetic_energy_np = kin.numerical_laplacian_2D(wavefunction, R)
+print("Kinetic energy (mine):", kinetic_energy_mine)
+print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
-
-
-
-
 
 acc, counter=0,0
 x01=random.uniform(0,1)

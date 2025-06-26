@@ -6,7 +6,26 @@
 # B = [[b11,...,b1N],...,[bN1,..., bNN]]
 import numpy as np
 import math
-def A_matrix_creator(M, R, sigma, phi, chip, chim):
+
+def single_particle_wf(m,r,sigma,use_chi=True):
+    '''
+    m = 0, +1, -1
+    r= [x,y] = coordinates of i-th particle
+    sigma the usual
+    use_chi = True if you want to use the chi_m wavefunction, False if you want to use phi_nlm
+    returns:
+    - single particle wavefunction with projection q.n. m, depending on my choice of use_chi 
+    '''
+    x,y = r
+    phi000 = (1/np.sqrt(np.pi*sigma**2))*np.exp((x**2+y**2)/(2*sigma**2))   
+    if m == 0:
+        return phi000
+    elif use_chi:
+        return phi000*x/sigma if m == 1 else phi000*y/sigma
+    else:
+        return phi000*(x+1j*m*y)/sigma 
+
+def A_matrix_creator(M, R, phi1, phi2, phi3):
     """
     creates the matrix from which we compute the slater determinant
 
@@ -14,14 +33,14 @@ def A_matrix_creator(M, R, sigma, phi, chip, chim):
     - M      : Number of particles of given spin
     - R      : Array of shape (M, 2), each row is [x, y] of particle
     - sigma  : Sigma parameter in h.o. wavefunction
-    - phi    : Callable: phi(x, y, spin)
-    - chip   : Callable: chip(x, y, spin)
-    - chim   : Callable: chim(x, y, spin)
+    - phi1    : Callable: phi1(r)
+    - phi2   : Callable: phi2(r)
+    - phi3   : Callable: phi3(r)
 
     returns :
     - A[i,j] = phi_j(x_i, y_i, spin_i) 
     """
-    basis_functions = [phi, chip, chim]
+    basis_functions = [phi1, phi2, phi3]
     num_basis = len(basis_functions)
     if M > num_basis:
         raise ValueError("not enough basis functions for n orbitalss")
@@ -29,9 +48,12 @@ def A_matrix_creator(M, R, sigma, phi, chip, chim):
     A = np.zeros((M, M), dtype=float)
 
     for i in range(M):  # row: particle
-        x, y = R[i]
+        r = R[i]
+        print(r)
         for j in range(M):  # col: basis function
-            A[i, j] = basis_functions[j](x, y, sigma)
+            A[i, j] = basis_functions[j](r=r)
+            print(A)
+            
 
 def safe_invert_matrix(A, rcond=1e-15):
     """
@@ -50,7 +72,7 @@ def safe_invert_matrix(A, rcond=1e-15):
         print("Matrix is singular or ill-conditioned. Using pseudoinverse.")
         return np.linalg.pinv(A, rcond=rcond)
 
-def slater_det(M, R, sigma, phi1, phi2, phi3, normalised = False, return_A = False):
+def slater_det(M, R, phi1, phi2, phi3, normalised = False, return_A = False):
     """
     Compute the Slater determinant for M particles.
 
@@ -73,7 +95,7 @@ def slater_det(M, R, sigma, phi1, phi2, phi3, normalised = False, return_A = Fal
     if M > num_basis:
         raise ValueError("not enough basis functions for N orbitalss")
 
-    A = A_matrix_creator(M, R, sigma, phi1, phi2, phi3)
+    A = A_matrix_creator(M, R, phi1, phi2, phi3)
 
     # Normalization factor, i dont wanna normalise because im scared of big numbers
     if not normalised:
@@ -92,11 +114,16 @@ def a_ij(spin_alignment):
     returns: a_ij coefficient for the jastrow factor
     '''
     return 1/2 - 1/4*spin_alignment
+
 def b_ij(spin_alignment, b_par, b_orth):
     '''
     spin_alignment = 1 if i, j particles have the same spin, 0 if they have opposite spins
     returns: b_ij coefficient for the jastrow factor
     '''
+    if spin_alignment:
+        return b_par
+    else:
+        return b_orth
 
 def jastrow_laplacian(N,N_up,R,b_par,b_orth):
     '''
@@ -147,24 +174,6 @@ def gradient_chi(m, r,sigma):
     else:
         raise ValueError("Invalid value for m = +-1")
 
-def single_particle_wf(m,r,sigma,use_chi=True):
-    '''
-    m = 0, +1, -1
-    r= [x,y] = coordinates of i-th particle
-    sigma the usual
-    use_chi = True if you want to use the chi_m wavefunction, False if you want to use phi_nlm
-    returns:
-    - single particle wavefunction with projection q.n. m, depending on my choice of use_chi 
-    '''
-    x,y = r
-    phi000 = (1/np.sqrt(np.pi*sigma**2))*math.exp((x**2+y**2)/(2*sigma**2))   
-    if m == 0:
-        return phi000
-    elif use_chi:
-        return phi000*x/sigma if m == 1 else phi000*y/sigma
-    else:
-        return phi000*(x+1j*m*y)/sigma 
-
 def jastrow_f_ij(r_ij, spin_alignment, b_ij):
     '''
     r_ij             :  relative position between i, j particles
@@ -197,11 +206,11 @@ def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, return_A = True):
         phi_plus =  partial(single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
         phi_minus =  partial(single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
         if return_A:
-            det_up,A_up = slater_det(N_up, R[:N_up], sigma, phi0, phi_plus, phi_minus, return_A = True)
-            det_down,A_down = slater_det(N_down, R[N_up:], sigma, phi0, phi_plus, phi_minus, return_A = True)
+            det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
+            det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
         else:
-            det_up = slater_det(N_up, R[:N_up], sigma, single_particle_wf(0), return_A = False)
-            det_down = slater_det(N_down, R[N_up:], sigma, single_particle_wf, gradient_chi, gradient_chi, return_A = False)
+            det_up = slater_det(N_up, R[:N_up], single_particle_wf(0), return_A = False)
+            det_down = slater_det(N_down, R[N_up:], single_particle_wf, gradient_chi, gradient_chi, return_A = False)
 
         jastrow_factor = 1.
         for i in range(N):
@@ -217,8 +226,6 @@ def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, return_A = True):
             return psi, det_up,det_down
     else:
         raise ValueError("to be implemented.")
-
-
 
 def gradient_single_particle_wf(m, r, sigma, use_chi=True):
     '''
@@ -236,8 +243,6 @@ def gradient_single_particle_wf(m, r, sigma, use_chi=True):
     else:
         return gradient_phi([0,1,m], r, sigma) 
 
-
-
 def slater_gradient(M,R,A_inv,i,det,sigma):
     ''' 
     This function calculates the gradient of the Slater determinant
@@ -251,7 +256,6 @@ def slater_gradient(M,R,A_inv,i,det,sigma):
         out += A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma)
     out *= det
     return out
-
 
 def gradient_gradient_term(N,R,A,B):
     '''
@@ -333,6 +337,27 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
     laplacian_term_2 = psi * (slater_laplacian_up + slater_laplacian_down)
 
+    laplacian = (laplacian_term_1 + laplacian_term_2)
     integrand = psi * (laplacian_term_1 + laplacian_term_2)
 
-    return integrand
+    return laplacian
+#   return integrand
+
+def numerical_laplacian_2D(Psi, R, h=1e-4):
+    """
+    Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
+    
+    Parameters:
+    - Psi : function R -> float, the total wavefunction
+    - R   : np.array of shape (2N,), position of all particles
+    - h   : finite difference step size
+
+    Returns:
+    - laplacian : float, estimate of \sum_i \nabla^2_i Psi(R)
+    """
+    laplacian = 0.0
+    for i in range(len(R)):
+        dR = np.zeros_like(R)
+        dR[i] = h
+        laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
+    return laplacian
