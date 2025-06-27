@@ -137,6 +137,7 @@ def jastrow_laplacian(N,N_up,R,b_par,b_orth):
             bij = b_ij(spin_alignment, b_par, b_orth)
             x = 1+bij*rij
             out *= (-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(-aij*rij / x)
+    out *= 2 
     return out
 
 def gradient_phi(alpha, r,sigma):
