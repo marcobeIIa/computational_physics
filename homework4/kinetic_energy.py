@@ -49,11 +49,9 @@ def A_matrix_creator(M, R, phi1, phi2, phi3):
 
     for i in range(M):  # row: particle
         r = R[i]
-        print(r)
         for j in range(M):  # col: basis function
             A[i, j] = basis_functions[j](r=r)
-            print(A)
-            
+    return A
 
 def safe_invert_matrix(A, rcond=1e-15):
     """
@@ -209,8 +207,8 @@ def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, return_A = True):
             det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
             det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
         else:
-            det_up = slater_det(N_up, R[:N_up], single_particle_wf(0), return_A = False)
-            det_down = slater_det(N_down, R[N_up:], single_particle_wf, gradient_chi, gradient_chi, return_A = False)
+            det_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = False)
+            det_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = False)
 
         jastrow_factor = 1.
         for i in range(N):
@@ -300,7 +298,7 @@ def slater_laplacian_term(M, R, A_inv, sigma,omega=1):
     - laplacian : Value of the Laplacian of the Slater determinant 
                   (actually lapl (det) / det) !!!
     """
-    out = np.zeros((1, 2))
+    out = 0
     alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
     for i in range(M):
         r_i = np.linalg.norm(R[i])
@@ -327,23 +325,26 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
     '''
     N_down = N - N_up
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi, return_A=True)
-    jastrow_laplacian = jastrow_laplacian(N, N_up, R, b_par, b_orth)
+    jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_orth)
 
     A_up_inv = safe_invert_matrix(A_up)
     A_down_inv = safe_invert_matrix(A_down)
 
-    laplacian_term_1 = det_up*det_down*jastrow_laplacian
-    slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up-1], A_up_inv, sigma, omega)
+    laplacian_term_1 = det_up*det_down*jastrow_laplacian_fact
+    slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
     laplacian_term_2 = psi * (slater_laplacian_up + slater_laplacian_down)
 
-    laplacian = (laplacian_term_1 + laplacian_term_2)
+    laplacian = laplacian_term_1 + laplacian_term_2
     integrand = psi * (laplacian_term_1 + laplacian_term_2)
+    print("psi:", psi,
+          "lapl_up:", slater_laplacian_up,
+          "lapl_down:", slater_laplacian_down,
+          "term 1:",laplacian_term_1, 
+          "term 2:",laplacian_term_2)
+    return integrand
 
-    return laplacian
-#   return integrand
-
-def numerical_laplacian_2D(Psi, R, h=1e-4):
+def numerical_integrand(Psi, R, h=1e-4):
     """
     Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
     
@@ -360,4 +361,5 @@ def numerical_laplacian_2D(Psi, R, h=1e-4):
         dR = np.zeros_like(R)
         dR[i] = h
         laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
-    return laplacian
+    integrand = laplacian * Psi(R)
+    return integrand

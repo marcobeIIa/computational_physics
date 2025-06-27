@@ -223,7 +223,7 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 import importlib
 import kinetic_energy as kin
 import numpy as np
-importlib.reload(kinetic_energy)
+importlib.reload(kin)
 # Parameters
 N = 3
 N_up = 2
@@ -235,15 +235,28 @@ use_chi = True
 
 # Define a grid of positions (e.g., 3 particles in 2D)
 R = np.array([
-    [2.0, 3.0],
-    [1.0, 2.0],
-    [0.5, 0.866]  # roughly equilateral triangle
+    [1.0, 3.0],
+    [3.0, 2.0],
+    [1.5, 0.266]  # roughly equilateral triangle
 ])
 from functools import partial
+phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
+phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
+phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
 
+det_up = kin.slater_det(N_up,R[:N_up],phi0,phi_plus,phi_minus)
+wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
+partial_wf = partial(kin.total_wf,
+                     N=N,
+                     N_up=N_up,
+                     sigma=sigma,
+                     b_par=b_par,
+                     b_orth=b_orth,
+                     use_chi=True,
+                     return_A=True)
+f = lambda r: partial_wf(R=r)[0]
 kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
-wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi, return_A=False)
-kinetic_energy_np = kin.numerical_laplacian_2D(wavefunction, R)
+kinetic_energy_np = kin.numerical_laplacian_2D(f, R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
