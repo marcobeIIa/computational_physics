@@ -244,6 +244,9 @@ phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
 phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
 phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
 
+print(kin.gradient_phi([0,0,0], R[0], sigma))
+
+
 det_up = kin.slater_det(N_up,R[:N_up],phi0,phi_plus,phi_minus)
 wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
 partial_wf = partial(kin.total_wf,
