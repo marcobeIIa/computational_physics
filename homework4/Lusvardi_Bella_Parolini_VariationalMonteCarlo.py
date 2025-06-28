@@ -236,7 +236,7 @@ use_chi = True
 # Define a grid of positions (e.g., 3 particles in 2D)
 
     
-box_size = 2
+box_size = 1
 R = np.random.uniform(0, box_size, size=(N, 2))
 #phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
 #phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)

@@ -1,67 +1,11 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
-# %%
-import random
-import numpy as np
 import math
-import matplotlib.pyplot as plt
-import scipy
-import scipy.special
+import numpy as np
 
-# %%
 jaud=1/2  #aij in Jastrow if antiparallel
 jauu=1/4  #aij in Jastrow if parallel
 jbud=1  #bij in Jastrow if antiparallel
 jbuu=1  #bij in Jastrow if parallel
 
-# %%
-def Metropolisguess(r,delta):
-    rn=np.zeros((len(r),len(r[0])))
-    for i in range(len(r)):
-        for j in range(len(r[0])):
-            a=random.uniform(0,1)
-            rn[i][j]= r[i][j]+delta*(a-0.5)
-    return rn
-
-# %%
-#Metropolis
-def Metropolis(r,delta, psi, b,counter, acc):
-    rn = Metropolisguess(r,delta)
-    p=psi(rn,b)**2/psi(r,b)**2
-    if p>1:
-        r=rn
-        acc+=1
-    else:
-        xi=random.uniform(0,1)
-        if p>xi:
-            r=rn
-            acc+=1
-
-    counter+=1
-    return r,acc, counter
-
-# %%
-def adjust_delta(delta, acceptance_rate):
-    if acceptance_rate > 0.6:
-        delta *= 1.1  # Increase delta by 10%
-    elif acceptance_rate < 0.4:
-        delta *= 0.9  # Decrease delta by 10%
-    return delta
-
-# %%
 def psix(x, b):
     return math.exp(-x**2/(2*b**2))
 
@@ -111,15 +55,13 @@ def psi6(r,b):
 
 def jastrowfunct(r,a,b):
     return math.exp(a*r/(1+b*r))
-
-# %%
+    s
 def Jastrow(r,a,b):
     j=1
     for i in range(len(r)):
         j*=jastrowfunct(r[i],a,b)
     return j
 
-# %%
 def Jastrowpsi(r,b):
     return psix(r[0][0],b)*psiy(r[1][0],b)
 
@@ -224,19 +166,6 @@ def Jastrowpsi6(r,b):
          [chim(r[0][3],r[1][3],b),chim(r[0][4],r[1][4],b),chim(r[0][5],r[1][5],b)]]
      return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,jauu,jbuu)
 
-# %%
-def delta_choice(r,delta,b,N_delta,counter,psi):
-  acc_rate=1
-  while acc_rate>0.6 or acc_rate<0.4:
-    acc,counter=0,0
-    for i in range(N_delta):
-      r, acc,counter = Metropolis(r, delta, psi, b,counter, acc)
-    acc_rate=acc/counter
-    delta = adjust_delta(delta, acc_rate)
-
-  return delta
-
-# %%
 def functchoice(n):
     if n==1:
         phi = psi
@@ -252,8 +181,6 @@ def functchoice(n):
         phi = psi6
     return phi
 
-
-# %%
 def functchoicejastrow(n):
     if n==1:
         phi = Jastrowpsi
@@ -268,170 +195,4 @@ def functchoicejastrow(n):
     elif n==6:
         phi = Jastrowpsi6
     return phi
-
-# %% [markdown]
-# ### POINT 3
-
-# %%
-import kinetic_energy as kin
-import phi 
-import numpy as np
-import importlib
-
-importlib.reload(kin)
-N_test = 3
-wavefunction = phi.functchoicejastrow(N_test)
-box_size=2
-sigma = 1
-R = np.random.uniform(0, box_size, size=(2,N_test))
-R_T = R.T
-wf_value_lusva = wavefunction(R, sigma)
-
-# %%
-# calculate to christ the kinetic energy in whicherver way 
-from scipy.integrate import nquad
-from functools import partial
-
-wf_laplacian = lambda R: kin.wf_laplacian(R, wavefunction, sigma)
-#integrand = lambda x,y: wf_laplacian(x,y) * wavefunction(np.array([x, y]), sigma)
-
-# Wrapper for flat input of length 2N
-def integrand(*args):
-    R_flat = np.array(args)  # args is a flat tuple of length 2N
-    R = R_flat.reshape(2, N_test)
-    return wf_laplacian(R) * wavefunction(R, sigma)
-
-print(wf_laplacian(R))
-# Now integrate over x in [-1,1], y in [-1,1]
-bounds = [(-1, 1) for _ in range(2 * N_test)]
-result, error = nquad(integrand, bounds)
-
-print("Integral =", result)
-print("Estimated error =", error)
-
-
-# %%
-import numpy as np
-
-def monte_carlo_integrate(wf_laplacian, N, L=1.0, M=100_000, sigma=1.0):
-    """
-    Monte Carlo integration of a 2N-dimensional function wf_laplacian(R),
-    where R is shaped (2, N), over [-L, L]^{2N}.
-
-    Args:
-        wf_laplacian: callable R -> float, where R.shape == (2, N)
-        N: number of particles
-        L: half-width of the integration box
-        M: number of Monte Carlo samples
-        sigma: passed to wf_laplacian via closure
-
-    Returns:
-        estimated integral value
-    """
-
-    volume = (2 * L)**(2 * N)
-    samples = 2 * L * (np.random.rand(M, 2, N) - 0.5)  # Shape: (M, 2, N)
-    
-    values = np.array([wf_laplacian(R) for R in samples])
-    
-    mean = np.mean(values)
-    std_err = np.std(values) / np.sqrt(M)
-    
-    integral = volume * mean
-    error = volume * std_err
-
-    return integral, error
-
-N=3
-# Run MC integration
-I, err = monte_carlo_integrate(wf_laplacian, N, L=1.5, M=100_000)
-print(f"Monte Carlo estimate: {I:.6f} ± {err:.6f}")
-
-
-# %% [markdown]
-# ### POINT 4
-
-# %%
-b=1
-
-part = 2
-funct=functchoice(part)
-r = np.zeros((2,part))
-acc, counter=0,0
-for i in range(len(r)):
-    for j in range(len(r[0])):
-        r[i][j]=random.uniform(0,1)   #r[x o y][particella]
-        
-
-delta=1
-N=1000000
-Neq=int(N*1/50)
-N_delta=10000
-posx1,posy1,posx2,posy2, acc_list=[],[],[],[],[]
-
-
-# %%
-delta = delta_choice(r,delta,b,N_delta,0,funct)
-
-for i in range(N):
-    r,acc, counter = Metropolis(r, delta, funct, b,counter, acc)
-    
-    posx1.append(r)
-
-    acc_list.append(acc/counter)
-
-
-print(f'b={b},\u0394={round(delta,3)}')
-
-
-# %%
-plt.plot(np.array(range(N)),acc_list)
-plt.title('Acceptance rate')
-
-# %% [markdown]
-# ### POINT 5
-
-# %%
-b=1
-
-
-
-part = 3
-
-r = np.zeros((2,part))
-acc, counter=0,0
-for i in range(len(r)):
-    for j in range(len(r[0])):
-        r[i][j]=random.uniform(0,1)   #r[x o y][particella]
-        
-
-funct=functchoicejastrow(part)
-
-
-
-acc, counter=0,0
-delta=1
-N=1000000
-Neq=int(N*1/50)
-N_delta=10000
-posx1,posy1,posx2,posy2, acc_list=[],[],[],[],[]
-
-# %%
-delta = delta_choice(r,delta,b,N_delta,0,funct)
-
-for i in range(N):
-    r,acc, counter = Metropolis(r, delta, funct, b,counter, acc)
-    
-    posx1.append(r)
-
-    acc_list.append(acc/counter)
-
-
-print(f'b={b},\u0394={round(delta,3)}')
-
-
-# %%
-plt.plot(np.array(range(N)),acc_list)
-plt.title('Acceptance rate')
-
 

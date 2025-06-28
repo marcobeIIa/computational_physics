@@ -17,7 +17,7 @@ def single_particle_wf(m,r,sigma,use_chi=True):
     - single particle wavefunction with projection q.n. m, depending on my choice of use_chi 
     '''
     x,y = r
-    phi000 = (1/np.sqrt(np.pi*sigma**2))*np.exp((x**2+y**2)/(2*sigma**2))   
+    phi000 = (1/np.sqrt(np.pi*sigma**2))*np.exp(-(x**2+y**2)/(2*sigma**2))   
     if m == 0:
         return phi000
     elif use_chi:
@@ -395,22 +395,27 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
           "term 3:",laplacian_term_3)
     return integrand
 
-def numerical_integrand(Psi, R, h=1e-4):
-    """
-    Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
-    
-    Parameters:
-    - Psi : function R -> float, the total wavefunction
-    - R   : np.array of shape (2N,), position of all particles
-    - h   : finite difference step size
 
-    Returns:
-    - laplacian : float, estimate of \sum_i \nabla^2_i Psi(R)
+def wf_laplacian(R,wavefunction, sigma, h=1e-4):
     """
+    Compute the Laplacian of the wavefunction Ψ(R, sigma),
+    where R is of shape (2, N).
+    
+    Returns a scalar: sum of second partial derivatives.
+    """
+    dim, N = R.shape
     laplacian = 0.0
-    for i in range(len(R)):
-        dR = np.zeros_like(R)
-        dR[i] = h
-        laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
-    integrand = laplacian * Psi(R)
-    return integrand
+    
+    # Loop over all particles and their coordinates (x or y)
+    for i in range(N):
+        for mu in range(dim):  # mu = 0 (x), 1 (y)
+            dR = np.zeros_like(R)
+            dR[mu, i] = h
+
+            plus = wavefunction(R + dR, sigma)
+            center = wavefunction(R, sigma)
+            minus = wavefunction(R - dR, sigma)
+            
+            laplacian += (plus - 2 * center + minus) / h**2
+    
+    return laplacian
