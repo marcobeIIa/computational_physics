@@ -253,21 +253,27 @@ def slater_gradient(M,R,A_inv,i,det,sigma,use_chi=True):
     i - i-th partiche wrt which we're computing the gradient 
     det - the Slater determinant itself
     '''
-    out = np.zeros((1, 2))
+    out = np.zeros(2)
     alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
     alpha_alt = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
     if M == 1 or M == 3:
         for j in range(M):
-            print(i,j , "run", A_inv, alpha, R)
+            #print(i,j , "run\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
             out += A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
         out *= det
+        #print("slater gradient . . . ",out)
     elif M==2: # if we only have a particle in the degenerate states, we average out the expectation value!
         out_1 = 0 
         out_2 = 0
         for j in range(M):
+            #rint(i,j , "run*\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
             out_1 += A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
             out_2 += A_inv[i][j] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi)
         out = det * (out_1 + out_2) / 2
+#       print("slater gradient* . . . ",out)
+    else:
+        out = 1.
+#       print("asdsfasdfasdfasf")
     return out
 
 def gradient_gradient_term(N,N_up,R,
@@ -300,11 +306,13 @@ def gradient_gradient_term(N,N_up,R,
             if i < N_up and j < N_up: # i is up-spin particle, j is also
                 slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,det_up,sigma,use_chi) - slater_gradient(N_up,R[:N_up],A_inv_up,j,det_up,sigma,use_chi)
             elif i < N_up and j >= N_up: # i is up-spin particle, j is down
-                slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,det_up,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j,det_down,sigma,use_chi)
+                #print("1------------\n",slater_gradient(N_up,R[:N_up],A_inv_up,i,det_up,sigma,use_chi))
+                #print("2------------\n",slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,det_down,sigma,use_chi))
+                slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,det_up,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,det_down,sigma,use_chi)
             elif i >= N_up and j >= N_up: # i is down-spin particle, j is also
-                slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i,det_down,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j,det_down,sigma,use_chi)
+                slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,det_down,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,det_down,sigma,use_chi)
             for l in range(2):
-                print("slatergrad",slater_grad, jastrow_grad_piece)
+                #print("slatergrad",slater_grad, jastrow_grad_piece)
                 out_placeholder = jastrow_grad_piece[l] * slater_grad[l]
                 out *= out_placeholder
     return 2*out
@@ -382,9 +390,8 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
     laplacian = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
     integrand = psi * (laplacian_term_1 + laplacian_term_2 + laplacian_term_3)
     print("psi:", psi,
-          "lapl_up:", slater_laplacian_up,
-          "lapl_down:", slater_laplacian_down,
           "term 1:",laplacian_term_1, 
+          "term 2:",laplacian_term_2, 
           "term 3:",laplacian_term_3)
     return integrand
 

@@ -226,7 +226,7 @@ import numpy as np
 importlib.reload(kin)
 # Parameters
 N = 3
-N_up = 2
+N_up = 1
 sigma = 1
 b_par = 1
 b_orth = 1
@@ -235,19 +235,27 @@ use_chi = True
 
 # Define a grid of positions (e.g., 3 particles in 2D)
 R = np.array([
-    [1.0, 3.0],
-    [3.0, 2.0],
-    [1.5, 0.266]  # roughly equilateral triangle
+    [1.0, 1.0],
+    [1.9, 2.0],
+    [0.5, 0.266]  # roughly equilateral triangle
 ])
+#phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
+#phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
+#phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
+
+#print(kin.gradient_phi([0,0,0], R[0], sigma))
+
+#det,A_up = kin.slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus,return_A = True)
+#A_inv_up = kin.safe_invert_matrix(A_up)
+#det,A_down = kin.slater_det(N-N_up, R[N_up:], phi0, phi_plus, phi_minus,return_A = True)
+#A_inv_down = kin.safe_invert_matrix(A_down)
+
+#up_slater = kin.slater_gradient(N_up, R[:N_up],A_inv_up,0,det,sigma)
+#down_slater = kin.slater_gradient(N-N_up, R[N_up:],A_inv_down,0,det,sigma)
+#print("up slater---------\n", up_slater)
+#print("down slater---------\n", down_slater)
 from functools import partial
-phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
-phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
-phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
-
-print(kin.gradient_phi([0,0,0], R[0], sigma))
-
-
-det_up = kin.slater_det(N_up,R[:N_up],phi0,phi_plus,phi_minus)
+importlib.reload(kin)
 wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
 partial_wf = partial(kin.total_wf,
                      N=N,
@@ -259,11 +267,10 @@ partial_wf = partial(kin.total_wf,
                      return_A=True)
 f = lambda r: partial_wf(R=r)[0]
 kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
-kinetic_energy_np = kin.numerical_laplacian_2D(f, R)
+kinetic_energy_np = kin.numerical_integrand(f, R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
-
 acc, counter=0,0
 x01=random.uniform(0,1)
 y01=random.uniform(0,1)
