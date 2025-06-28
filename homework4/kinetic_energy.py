@@ -150,7 +150,7 @@ def gradient_phi(alpha, r,sigma):
     '''
     x,y = r
     n,l,m = alpha
-    factor = np.exp((x**2+y**2)/(2*sigma**2))/ sigma**2
+    factor = np.exp((x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**3)
     if alpha == [0,0,0]:
         return np.array([x* factor,
                          y* factor])
@@ -300,7 +300,7 @@ def gradient_gradient_term(N,N_up,R,
             aij = a_ij(spin_alignment)
             bij = b_ij(spin_alignment, b_par, b_orth)
             x = 1+bij*rij
-            jastrow_prefactor = aij/ x**2 * np.exp(-aij*rij / x)
+            jastrow_prefactor = aij/ x**2 * np.exp(aij*rij / x)
             jastrow_grad_piece = jastrow_prefactor* (R[i]-R[j]) #this guy should be a vector
 
             if i < N_up and j < N_up: # i is up-spin particle, j is also

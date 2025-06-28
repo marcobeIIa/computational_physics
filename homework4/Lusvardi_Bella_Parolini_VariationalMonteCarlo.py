@@ -210,8 +210,8 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 # \end{align*}
 # and the laplacians
 # \begin{align*}
-#    \nabla ^2 \phi_{000} &= \left(\frac{2r}{\sigma^2} +
-#    \left(\frac{r}{\sigma^2}\right)^2\right)\phi_{000}\nonumber \\ 
+#    \nabla ^2 \phi_{000} &= \left(\frac{2}{\sigma^2} +
+#    \left(\frac{r^2}{\sigma^4}\right)\right)\phi_{000}\nonumber \\ 
 #    \nabla ^2 \phi_{01 \pm }&= \frac{1}{\sqrt{\pi \sigma^2}} \frac{1}{\sigma^3}\left[2 +
 #    \frac{x}{\sigma^2} \left(1+\frac{x}{\sigma^2}\right) + \frac{y}{\sigma^2}\left(\pm i +
 #    \frac{y}{\sigma^2}\right)\right]e^{\frac{x^2+y^2}{2\sigma^2}}
@@ -225,8 +225,8 @@ import kinetic_energy as kin
 import numpy as np
 importlib.reload(kin)
 # Parameters
-N = 3
-N_up = 1
+N = 5
+N_up = 3
 sigma = 1
 b_par = 1
 b_orth = 1
@@ -234,11 +234,10 @@ omega = 1
 use_chi = True
 
 # Define a grid of positions (e.g., 3 particles in 2D)
-R = np.array([
-    [1.0, 1.0],
-    [1.9, 2.0],
-    [0.5, 0.266]  # roughly equilateral triangle
-])
+
+    
+box_size = 2
+R = np.random.uniform(0, box_size, size=(N, 2))
 #phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
 #phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
 #phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
@@ -256,7 +255,7 @@ R = np.array([
 #print("down slater---------\n", down_slater)
 from functools import partial
 importlib.reload(kin)
-wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
+#wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
 partial_wf = partial(kin.total_wf,
                      N=N,
                      N_up=N_up,
@@ -271,6 +270,8 @@ kinetic_energy_np = kin.numerical_integrand(f, R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
+
+
 acc, counter=0,0
 x01=random.uniform(0,1)
 y01=random.uniform(0,1)
