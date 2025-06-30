@@ -283,9 +283,9 @@ N_test = 3
 wavefunction = phi.functchoicejastrow(N_test)
 box_size=2
 sigma = 1
-R = np.random.uniform(0, box_size, size=(2,N_test))
-R_T = R.T
-wf_value_lusva = wavefunction(R, sigma)
+R_test = np.random.uniform(0, box_size, size=(2,N_test))
+R_test_T = R_test.T
+wf_value_lusva = wavefunction(R_test, sigma)
 
 # %%
 # calculate to christ the kinetic energy in whicherver way 
@@ -301,19 +301,28 @@ def integrand(*args):
     R = R_flat.reshape(2, N_test)
     return wf_laplacian(R) * wavefunction(R, sigma)
 
-print(wf_laplacian(R))
+import time
+
+start_time = time.time()
+print(wf_laplacian(R_test))
+end_time = time.time()
+print("Time taken for wf_laplacian:", end_time - start_time)
 # Now integrate over x in [-1,1], y in [-1,1]
 bounds = [(-1, 1) for _ in range(2 * N_test)]
-result, error = nquad(integrand, bounds)
 
-print("Integral =", result)
-print("Estimated error =", error)
+# Tighter tolerances = slower, Looser tolerances = faster
+#opts = {'epsabs': 1e-1, 'epsrel': 1e-1}  # Adjust these as needed
+
+#result, error = nquad(integrand, bounds, opts = [opts]*2*N_test)
+
+#print("Integral =", result)
+#print("Estimated error =", error)
 
 
 # %%
 import numpy as np
 
-def monte_carlo_integrate(wf_laplacian, N, L=1.0, M=100_000, sigma=1.0):
+def monte_carlo_integrate(wf_laplacian, N, L=2.0, M=100_000, sigma=1.0):
     """
     Monte Carlo integration of a 2N-dimensional function wf_laplacian(R),
     where R is shaped (2, N), over [-L, L]^{2N}.
@@ -346,6 +355,10 @@ N=3
 # Run MC integration
 I, err = monte_carlo_integrate(wf_laplacian, N, L=1.5, M=100_000)
 print(f"Monte Carlo estimate: {I:.6f} ± {err:.6f}")
+#Monte Carlo estimate: 5.813657 ± 2.973641
+#Monte Carlo estimate: 1.704294 ± 2.970737
+#Monte Carlo estimate: 1.488415 ± 2.965339
+
 
 
 # %% [markdown]

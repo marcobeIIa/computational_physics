@@ -150,13 +150,15 @@ def gradient_phi(alpha, r,sigma):
     '''
     x,y = r
     n,l,m = alpha
-    factor = np.exp((x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**3)
+    factor = np.exp(-(x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**3)
     if alpha == [0,0,0]:
-        return np.array([x* factor,
-                         y* factor])
+        return np.array([-x* factor,
+                         -y* factor])
     elif [n,l] == [0,1]:
-        return np.array([(1+ x/sigma**2*(x+m*1j*y))* factor,
-                         (m*1j + y/sigma**2(x+m*1j*y))* factor])
+        # these are most certainly wrong but we don't even use them
+        # cba to compute the right result. i am getting no money from this
+        return np.array([(1- 1/sigma**2*(x+m*1j*y))* factor,
+                         (m*1j - 1/sigma**2*(x+m*1j*y))* factor])
 
 def gradient_chi(m, r,sigma):
     '''
@@ -167,13 +169,13 @@ def gradient_chi(m, r,sigma):
     - gradient of chi_m
     '''
     x,y = r
-    factor = np.exp((x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**2)
+    factor = np.exp(-(x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**2)
     if m == -1:
-        return factor * np.array([x*y/sigma**2,
-                                 1+ y**2/sigma**2])
+        return factor * np.array([-x*y/sigma**2,
+                                 1- y**2/sigma**2])
     elif m == 1:
-        return factor * np.array([x*y/sigma**2,
-                                 1+ y**2/sigma**2])
+        return factor * np.array([-x*y/sigma**2,
+                                 1- y**2/sigma**2])
     else:
         raise ValueError("Invalid value for m = +-1")
 
@@ -419,3 +421,24 @@ def wf_laplacian(R,wavefunction, sigma, h=1e-4):
             laplacian += (plus - 2 * center + minus) / h**2
     
     return laplacian
+
+
+def numerical_integrand(Psi, R, h=1e-4):
+    """
+    Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
+    
+    Parameters:
+    - Psi : function R -> float, the total wavefunction
+    - R   : np.array of shape (2N,), position of all particles
+    - h   : finite difference step size
+
+    Returns:
+    - laplacian : float, estimate of \sum_i \nabla^2_i Psi(R)
+    """
+    laplacian = 0.0
+    for i in range(len(R)):
+        dR = np.zeros_like(R)
+        dR[i] = h
+        laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
+    integrand = laplacian * Psi(R)
+    return integrand

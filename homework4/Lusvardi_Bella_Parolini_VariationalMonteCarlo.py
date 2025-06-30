@@ -266,11 +266,14 @@ partial_wf = partial(kin.total_wf,
                      return_A=True)
 f = lambda r: partial_wf(R=r)[0]
 kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
+f = lambda r: partial_wf(R=r)[0]
 kinetic_energy_np = kin.numerical_integrand(f, R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
 
+
+#
 
 acc, counter=0,0
 x01=random.uniform(0,1)
