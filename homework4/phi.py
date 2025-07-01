@@ -21,6 +21,15 @@ def chip(x,y,b):
 def chim(x,y,b):
     return y*psi(x,y,b)
 
+def single_wf_choice(n):
+    if n==0:
+        return psi
+    if n==1:
+        return chip
+    if n==-1:
+        return chim
+
+
 def psi2(r,b):
     return psi(r[0][0],r[1][0],b)*psi(r[0][1],r[1][1],b)
 
@@ -55,14 +64,20 @@ def psi6(r,b):
 
 def jastrowfunct(r,a,b):
     return math.exp(a*r/(1+b*r))
-    s
-def Jastrow(r,a,b):
+
+def Jastrow(r,aligned):
     j=1
     for i in range(len(r)):
+        if aligned[i] == True:
+            a = jauu
+            b = jbuu
+        else:
+            a = jaud
+            b = jbud
         j*=jastrowfunct(r[i],a,b)
     return j
 
-def Jastrowpsi(r,b):
+def Jastrowsi(r,b):
     return psix(r[0][0],b)*psiy(r[1][0],b)
 
 def Jastrowpsi2(r,b):
@@ -79,21 +94,24 @@ def Jastrowpsi2(r,b):
      rij=np.zeros(int(part*(part-1)/2))
      for i in range(len(rij)):
           rij[i]=np.sqrt(xij[i]**2+yij[i]**2)
-          
-          
-     return psi(r[0][0],r[1][0],b)*psi(r[0][1],r[1][1],b)*Jastrow(rij,jauu,jbuu)
+#     print("Lusva rij", rij)
+     return psi(r[0][0],r[1][0],b)*psi(r[0][1],r[1][1],b)*Jastrow(rij,[False])
 
 def Jastrowpsi3(r,b):
      part=3
      xij=np.zeros(int(part*(part-1)/2))
      yij=np.zeros(int(part*(part-1)/2))
      k=0
+     aligned = np.zeros(int(part * (part - 1) / 2), dtype=bool)
      for i in range(len(r[0])):
           for j in range(i):
                xij[k]=r[0][i]-r[0][j]
                yij[k]=r[1][i]-r[1][j]
                k+=1
-
+               if i < 2 and j <2 or i >= 2 and j>=2:
+                   aligned[i] = True
+               else:
+                   aligned[i] = False
      rij=np.zeros(int(part*(part-1)/2))
      for i in range(len(rij)):
           rij[i]=np.sqrt(xij[i]**2+yij[i]**2)
@@ -101,7 +119,7 @@ def Jastrowpsi3(r,b):
      A = [[psi(r[0][0],r[1][0],b),psi(r[0][1],r[1][1],b)], 
          [chip(r[0][0],r[1][0],b),chip(r[0][1],r[1][1],b)]]
      
-     return np.linalg.det(A)*psi(r[0][2],r[1][2],b)*Jastrow(rij,jauu,jbuu)
+     return np.linalg.det(A)*psi(r[0][2],r[1][2],b)*Jastrow(rij,aligned)
     
 def Jastrowpsi4(r,b):
      part=4

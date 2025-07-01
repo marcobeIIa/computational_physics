@@ -119,8 +119,10 @@ def b_ij(spin_alignment, b_par, b_orth):
     returns: b_ij coefficient for the jastrow factor
     '''
     if spin_alignment:
+        print("spins are par", b_par)
         return b_par
     else:
+        print("spins are antipar", b_orth)
         return b_orth
 
 def jastrow_laplacian(N,N_up,R,b_par,b_orth):
@@ -184,8 +186,8 @@ def jastrow_f_ij(r_ij, spin_alignment, b_ij):
     r_ij             :  relative position between i, j particles
     spin_alignmnent  :  1 if i, j particles have the same spin, 0 if they have opposite spins
     '''
-    a_ij = 1/2 - 1/4*spin_alignment
-    return np.exp(a_ij * r_ij / (1+ b_ij * r_ij) )
+    aij = a_ij(spin_alignment)
+    return np.exp(aij * r_ij / (1+ b_ij * r_ij) )
 
 from functools import partial
 
@@ -218,12 +220,29 @@ def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, return_A = True):
             det_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = False)
 
         jastrow_factor = 1.
+        #for i in range(N):
+            #for j in range(i+1, N):
+                #r_ij = np.linalg.norm(R[i] - R[j])
+                #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+               ## print("mb--jastrowfunct",i,j, "-th iteration")
+               ## print("rij",r_ij)
+                #bij = b_ij(spin_alignment,b_par,b_orth)
+                #jastrow_factor *= jastrow_f_ij(r_ij, spin_alignment, bij)
+                #print("jastrow",jastrow_factor)
+        #print("-------------\n mb jstrow final",jastrow_factor)
+        jastrow_log = 0.
         for i in range(N):
             for j in range(i+1, N):
                 r_ij = np.linalg.norm(R[i] - R[j])
+       #         print("mb rij",r_ij)
                 spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-                b_ij = b_par * spin_alignment + b_orth * (1 - spin_alignment)
-                jastrow_factor *= jastrow_f_ij(r_ij, spin_alignment, b_ij)
+       #         print("spin alignment mb",spin_alignment)
+                bij = b_ij(spin_alignment, b_par, b_orth)
+                aij = a_ij(spin_alignment)
+                jastrow_log += aij * r_ij / (1 + bij * r_ij)
+        jastrow_factor = np.exp(jastrow_log)
+       # print("full jastrow mb",jastrow_factor)
+
         psi = det_up * det_down * jastrow_factor
         if return_A:
             return psi, det_up, det_down, A_up, A_down
@@ -234,10 +253,10 @@ def total_wf(N,N_up, R, sigma, b_par, b_orth, use_chi=True, return_A = True):
 
 def gradient_single_particle_wf(m, r, sigma, use_chi=True):
     '''
-    m = 0, +1, -1
-    r= [x,y] = coordinates of i-th particle
-    sigma the usual
-    use_chi = True if you want to use the chi_m wavefunction, False if you want to use phi_nlm
+    - m = 0, +1, -1
+    - r= [x,y] = coordinates of i-th particle
+    - sigma the usual
+    - use_chi = True if you want to use the chi_m wavefunction, False if you want to use phi_nlm
     returns:
     - gradient of the single particle wavefunction with projection q.n. m, depending on my choice of use_chi 
     '''
@@ -442,3 +461,23 @@ def numerical_integrand(Psi, R, h=1e-4):
         laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
     integrand = laplacian * Psi(R)
     return integrand
+
+def N_up_choice(N):
+    '''
+    returns the right value of N_up to match with results from lusva
+    '''
+    if N==1:
+        N_up = 1
+    elif N==2:
+        N_up = 1
+    elif N==3:
+        N_up = 2
+    elif N==4:
+        N_up = 2
+    elif N==5:
+        N_up = 3
+    elif N==6:
+        N_up = 3
+    else:
+        raise ValueError("N must be between 1 and 6")
+    return N_up

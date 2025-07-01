@@ -277,15 +277,30 @@ import kinetic_energy as kin
 import phi 
 import numpy as np
 import importlib
+from functools import partial
+import matplotlib.pyplot as plt
+sigma = 1
 
 importlib.reload(kin)
-N_test = 3
+N_test = 5
 wavefunction = phi.functchoicejastrow(N_test)
-box_size=2
+wf_mb = partial(kin.total_wf, N=N_test, N_up= N_test//2, sigma = sigma, b_par = phi.jauu, b_orth = phi.jbuu)
+box_size=1
 sigma = 1
+
+wf_value_lusva= np.zeros(100)
+wf_value_mb= np.zeros(100)
 R_test = np.random.uniform(0, box_size, size=(2,N_test))
-R_test_T = R_test.T
-wf_value_lusva = wavefunction(R_test, sigma)
+for i in range(100):
+    R_test[1][N_test-1] = R_test[1][N_test-1] + i/200  # Example positions for testing  
+    R_test_T = R_test.T
+    wf_value_lusva[i] = wavefunction(R_test, sigma)
+    wf_value_mb[i] =5* wf_mb(R=R_test_T)[0]
+plt.plot(wf_value_lusva, label='Lusva Wavefunction')    
+plt.plot(wf_value_mb, label='MB Wavefunction')
+plt.legend()
+#print(f"Wavefunction value (Lusva): {wf_value_lusva}")
+#print(f"Wavefunction value (MB): {wf_value_mb}")
 
 # %%
 # calculate to christ the kinetic energy in whicherver way 
