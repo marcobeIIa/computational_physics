@@ -77,7 +77,7 @@ def Jastrow(r,aligned):
         j*=jastrowfunct(r[i],a,b)
     return j
 
-def Jastrowsi(r,b):
+def Jastrowpsi(r,b):
     return psix(r[0][0],b)*psiy(r[1][0],b)
 
 def Jastrowpsi2(r,b):
@@ -107,11 +107,11 @@ def Jastrowpsi3(r,b):
           for j in range(i):
                xij[k]=r[0][i]-r[0][j]
                yij[k]=r[1][i]-r[1][j]
-               k+=1
                if i < 2 and j <2 or i >= 2 and j>=2:
-                   aligned[i] = True
+                   aligned[k] = True
                else:
-                   aligned[i] = False
+                   aligned[k] = False
+               k+=1
      rij=np.zeros(int(part*(part-1)/2))
      for i in range(len(rij)):
           rij[i]=np.sqrt(xij[i]**2+yij[i]**2)
@@ -126,10 +126,15 @@ def Jastrowpsi4(r,b):
      xij=np.zeros(int(part*(part-1)/2))
      yij=np.zeros(int(part*(part-1)/2))
      k=0
+     aligned = np.zeros(int(part * (part - 1) / 2), dtype=bool)
      for i in range(len(r[0])):
           for j in range(i):
                xij[k]=r[0][i]-r[0][j]
                yij[k]=r[1][i]-r[1][j]
+               if i < 2 and j <2 or i >= 2 and j>=2:
+                   aligned[k] = True
+               else:
+                   aligned[k] = False
                k+=1
 
      rij=np.zeros(int(part*(part-1)/2))
@@ -139,17 +144,22 @@ def Jastrowpsi4(r,b):
          [chip(r[0][0],r[1][0],b),chip(r[0][1],r[1][1],b)]]
      B = [[psi(r[0][2],r[1][2],b),psi(r[0][3],r[1][3],b)], 
          [chip(r[0][2],r[1][2],b),chip(r[0][3],r[1][3],b)]]
-     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,jauu,jbuu)
+     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,aligned)
 
 def Jastrowpsi5(r,b):
      part=5
      xij=np.zeros(int(part*(part-1)/2))
      yij=np.zeros(int(part*(part-1)/2))
      k=0
+     aligned = np.zeros(int(part * (part - 1) / 2), dtype=bool)
      for i in range(len(r[0])):
           for j in range(i):
                xij[k]=r[0][i]-r[0][j]
                yij[k]=r[1][i]-r[1][j]
+               if i < 3 and j <3 or i >= 3 and j>=3:
+                   aligned[k] = True
+               else:
+                   aligned[k] = False
                k+=1
 
      rij=np.zeros(int(part*(part-1)/2))
@@ -160,17 +170,22 @@ def Jastrowpsi5(r,b):
          [chim(r[0][0],r[1][0],b),chim(r[0][1],r[1][1],b),chim(r[0][2],r[1][2],b)]]
      B = [[psi(r[0][3],r[1][3],b),psi(r[0][4],r[1][4],b)], 
          [chip(r[0][3],r[1][3],b),chip(r[0][4],r[1][4],b)]]
-     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,jauu,jbuu)
+     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,aligned)
 
 def Jastrowpsi6(r,b):
      part=6
      xij=np.zeros(int(part*(part-1)/2))
      yij=np.zeros(int(part*(part-1)/2))
      k=0
+     aligned = np.zeros(int(part * (part - 1) / 2), dtype=bool)
      for i in range(len(r[0])):
           for j in range(i):
                xij[k]=r[0][i]-r[0][j]
                yij[k]=r[1][i]-r[1][j]
+               if i < 3 and j <3 or i >= 3 and j>=3:
+                   aligned[k] = True
+               else:
+                   aligned[k] = False
                k+=1
 
      rij=np.zeros(int(part*(part-1)/2))
@@ -182,7 +197,7 @@ def Jastrowpsi6(r,b):
      B = [[psi(r[0][3],r[1][3],b),psi(r[0][4],r[1][4],b),psi(r[0][5],r[1][5],b)], 
          [chip(r[0][3],r[1][3],b),chip(r[0][4],r[1][4],b),chip(r[0][5],r[1][5],b)],
          [chim(r[0][3],r[1][3],b),chim(r[0][4],r[1][4],b),chim(r[0][5],r[1][5],b)]]
-     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,jauu,jbuu)
+     return np.linalg.det(A)*np.linalg.det(B)*Jastrow(rij,aligned)
 
 def functchoice(n):
     if n==1:

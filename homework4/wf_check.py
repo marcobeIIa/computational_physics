@@ -90,7 +90,7 @@ import importlib
 
 importlib.reload(kin)
 importlib.reload(phi)
-N = 3
+N = 6
 tot_wf_value_lusva= np.zeros(100)
 tot_wf_value_mb= np.zeros(100)
 wavefunction = phi.functchoicejastrow(N)

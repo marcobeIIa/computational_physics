@@ -119,10 +119,8 @@ def b_ij(spin_alignment, b_par, b_orth):
     returns: b_ij coefficient for the jastrow factor
     '''
     if spin_alignment:
-        print("spins are par", b_par)
         return b_par
     else:
-        print("spins are antipar", b_orth)
         return b_orth
 
 def jastrow_laplacian(N,N_up,R,b_par,b_orth):
