@@ -136,8 +136,8 @@ def jastrow_laplacian(N,N_up,R,b_par,b_orth):
             aij = a_ij(spin_alignment)
             bij = b_ij(spin_alignment, b_par, b_orth)
             x = 1+bij*rij
-            out *= (-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(-aij*rij / x)
-    out *= 2 
+            out *= 2*(-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(aij*rij / x)
+            print(out)
     return out
 
 def gradient_phi(alpha, r,sigma):
@@ -442,13 +442,13 @@ def wf_laplacian(R,wavefunction, sigma, h=1e-4):
     return laplacian
 
 
-def numerical_integrand(Psi,N, R, h=1e-4):
+def numerical_integrand(Psi,N, R, h=1e-4,return_laplacian = False):
     '''
-    Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
+    Numerically estimate the total Laplacian of Psi at R (N,2)-dimensional point).
     
     Parameters:
     - Psi : function R -> float, the total wavefunction
-    - R   : np.array of shape (2N,), position of all particles
+    - R   : np.array of shape (N,2), position of all particles
     - h   : finite difference step size
 
     Returns:
@@ -458,10 +458,14 @@ def numerical_integrand(Psi,N, R, h=1e-4):
     for i in range(N):      # x and y
         for j in range(2):  # particle index
             dR = np.zeros_like(R)
-            dR[i, j] = h
+            dR[i,j] = h
             laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
     integrand = laplacian * Psi(R)
-    return integrand
+    if return_laplacian == False:
+        return integrand
+    else:
+        return laplacian
+
 
 def N_up_choice(N):
     '''

@@ -222,6 +222,7 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 # +
 import importlib
 import kinetic_energy as kin
+import libraryMetropolis as kin2
 import numpy as np
 importlib.reload(kin)
 # Parameters
@@ -265,16 +266,23 @@ partial_wf = partial(kin.total_wf,
                      use_chi=True,
                      return_A=True)
 kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
+kinetic_energy_mine_2 = kin2.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
 #kinetic_energy_mine_2 = kin.kinetic_energy_integrand_2(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
 f = lambda r: partial_wf(R=r)[0]
 f = lambda r: kin.total_wf(N, N_up, r, sigma, b_par, b_orth, use_chi=True, return_A=False)[0]
 
 kinetic_energy_np = kin.numerical_integrand(f, N,R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
+print("Kinetic energy (mine2):", kinetic_energy_mine_2)
 #print("Kinetic energy (mine):", kinetic_energy_mine_2)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
 
+
+# try changing h
+print(kin.numerical_integrand(f, N,R, h = 1e-3))
+print(kin.numerical_integrand(f, N,R, h = 1e-4))
+print(kin.numerical_integrand(f, N,R, h = 1e-5))
 
 #
 

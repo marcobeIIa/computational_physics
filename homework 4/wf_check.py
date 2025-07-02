@@ -68,7 +68,7 @@ wf_mb = partial(kin.total_wf, N=N, N_up= kin.N_up_choice(N), sigma = sigma, b_pa
 
 wf_value_lusva= np.zeros(100)
 wf_value_mb= np.zeros(100)
-R_test = np.random.uniform(0, box_size, size=(2,N))
+R_test = np.random.uniform(0, box_size, size=(N,2))
 
 for i in range(100):
     R_test[1][N-1] = R_test[1][N-1] + i/200  # Example positions for testing  
