@@ -442,8 +442,8 @@ def wf_laplacian(R,wavefunction, sigma, h=1e-4):
     return laplacian
 
 
-def numerical_integrand(Psi, R, h=1e-4):
-    """
+def numerical_integrand(Psi,N, R, h=1e-4):
+    '''
     Numerically estimate the total Laplacian of Psi at R (2N-dimensional point).
     
     Parameters:
@@ -453,12 +453,13 @@ def numerical_integrand(Psi, R, h=1e-4):
 
     Returns:
     - laplacian : float, estimate of \sum_i \nabla^2_i Psi(R)
-    """
+    ''' 
     laplacian = 0.0
-    for i in range(len(R)):
-        dR = np.zeros_like(R)
-        dR[i] = h
-        laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
+    for i in range(N):      # x and y
+        for j in range(2):  # particle index
+            dR = np.zeros_like(R)
+            dR[i, j] = h
+            laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
     integrand = laplacian * Psi(R)
     return integrand
 

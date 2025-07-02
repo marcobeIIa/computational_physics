@@ -265,11 +265,13 @@ partial_wf = partial(kin.total_wf,
                      use_chi=True,
                      return_A=True)
 kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
-kinetic_energy_mine_2 = kin.kinetic_energy_integrand_2(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
+#kinetic_energy_mine_2 = kin.kinetic_energy_integrand_2(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
 f = lambda r: partial_wf(R=r)[0]
-kinetic_energy_np = kin.numerical_integrand(f, R)
+f = lambda r: kin.total_wf(N, N_up, r, sigma, b_par, b_orth, use_chi=True, return_A=False)[0]
+
+kinetic_energy_np = kin.numerical_integrand(f, N,R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
-print("Kinetic energy (mine):", kinetic_energy_mine_2)
+#print("Kinetic energy (mine):", kinetic_energy_mine_2)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
 
