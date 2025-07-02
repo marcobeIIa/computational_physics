@@ -218,6 +218,7 @@ def gradient_phi(alpha, r,sigma):
     elif [n,l] == [0,1]:
         # these are most certainly wrong but we don't even use them
         # cba to compute the right result. i am getting no money from this
+        print("dis is wong")
         return np.array([(1- 1/sigma**2*(x+m*1j*y))* factor,
                          (m*1j - 1/sigma**2*(x+m*1j*y))* factor])
 
@@ -231,12 +232,12 @@ def gradient_chi(m, r,sigma):
     '''
     x,y = r
     factor = np.exp(-(x**2+y**2)/(2*sigma**2))/ (np.sqrt(math.pi) * sigma**2)
-    if m == -1:
-        return factor * np.array([-x*y/sigma**2,
-                                 1- y**2/sigma**2])
-    elif m == 1:
-        return factor * np.array([-x*y/sigma**2,
-                                 1- y**2/sigma**2])
+    if m == 1:
+        return factor * np.array([1-x/sigma,
+                                 1])
+    elif m == -1:
+        return factor * np.array([1,
+                                 1- y/sigma])
     else:
         raise ValueError("Invalid value for m = +-1")
 
@@ -326,7 +327,7 @@ def gradient_single_particle_wf(m, r, sigma, use_chi=True):
     else:
         return gradient_phi([0,1,m], r, sigma) 
 
-def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
+def slater_gradient(M,R,i,sigma,use_chi=True):
     ''' 
     This function calculates the gradient of the Slater determinant
     A_inv - the inverse of the Slater matrix
@@ -339,6 +340,15 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
     alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
     alpha_alt = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
     if M == 1 or M == 3:
+        phi0 = lambda r: single_particle_wf(0,r, sigma, use_chi=use_chi)
+        phi1 = lambda r: single_particle_wf(1,r, sigma, use_chi=use_chi)
+        phi2 = lambda r: single_particle_wf(-1,r, sigma, use_chi=use_chi)
+
+        A = A_matrix_creator(M, R, phi0, phi1, phi2)
+        A_alt = A_matrix_creator(M, R, phi0, phi2, phi1)
+
+        A_inv = safe_invert_matrix(A)
+        A_inv_alt = safe_invert_matrix(A_alt)
         for j in range(M):
             #print(i,j , "run\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
             out += A_inv[j,i] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
@@ -349,12 +359,12 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
         for j in range(M):
             #rint(i,j , "run*\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
             out_1 += A_inv[j,i] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
-            out_2 += A_inv[j,i] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi)
+            out_2 += A_inv_alt[j,i] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi)
         out = (out_1 + out_2) / 2
         print("fuck",out)
     else:
         out = [1, 1]
-        print("asdsfasdfasdfasf")
+        print("M not 1 not 2 not 3 what the hel")
     return out
 
 def gradient_gradient_term(N,N_up,R,
@@ -388,9 +398,9 @@ def gradient_gradient_term(N,N_up,R,
                 jastrow_prefactor = aij/ x**2 *sij
                 jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
         if i < N_up:
-            slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi)
+            slater_grad = slater_gradient(N_up,R[:N_up],i,sigma,use_chi)
         else:
-            slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,sigma,use_chi)
+            slater_grad = slater_gradient(N-N_up,R[N_up:],i-N_up,sigma,use_chi)
         out += jastrow_grad_piece[0] * slater_grad[0] + jastrow_grad_piece[1] * slater_grad[1]
     return 2*out
 
