@@ -123,22 +123,83 @@ def b_ij(spin_alignment, b_par, b_orth):
     else:
         return b_orth
 
-def jastrow_laplacian(N,N_up,R,b_par,b_orth):
+def jastrow(N,R,N_up,b_par,b_orth):
+    jastrow_log = 0.
+    for i in range(N):
+        for j in range(i+1, N):
+            r_ij = np.linalg.norm(R[i] - R[j])
+    #         print("mb rij",r_ij)
+            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+    #         print("spin alignment mb",spin_alignment)
+            bij = b_ij(spin_alignment, b_par, b_orth)
+            aij = a_ij(spin_alignment)
+            jastrow_log += aij * r_ij / (1 + bij * r_ij)
+    jastrow_factor = np.exp(jastrow_log)
+    return jastrow_factor
+
+#def jastrow_laplacianb(N,N_up,R,b_par,b_orth):
+    #'''
+    #b_par, b_orth : jastrow parameters for parallel / antiparallel spins
+    #returns: laplacian of jastrow factor
+    #'''
+    #out = 0
+    #for i in range(N):
+        #vect_term = np.zeros(2)
+        #for j in range(i,N):
+            #if j != i:
+                #rij = np.linalg.norm(R[i] - R[j])
+                #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+                #aij = a_ij(spin_alignment)
+                #bij = b_ij(spin_alignment, b_par, b_orth)
+                #x = 1+bij*rij
+                #f_ij_2der = -2*aij*bij/ x**3 + aij**2/x**4
+                #f_ij_der = aij/x**2
+                #vect_term[0] += f_ij_der * (R[i][0] - R[j][0]) / rij
+                #vect_term[1] += f_ij_der * (R[i][1] - R[j][1]) / rij
+                #out += f_ij_2der - f_ij_der**2 + f_ij_der / rij
+            #else:
+                #continue
+        #out += vect_term[0]**2 + vect_term[1]**2
+    #jassy = jastrow(N,R,N_up, b_par, b_orth)
+    #out *= jassy
+    #return out
+
+
+def jastrow_laplacian(N, N_up,R, b_par, b_orth):
     '''
     b_par, b_orth : jastrow parameters for parallel / antiparallel spins
     returns: laplacian of jastrow factor
     '''
-    out = 1
+    R = np.asarray(R, float)          # shape (N, 2)
+    N  = len(R)
+    g  = np.zeros((N, 2))
+    lam = np.zeros(N)
+
     for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-            aij = a_ij(spin_alignment)
-            bij = b_ij(spin_alignment, b_par, b_orth)
-            x = 1+bij*rij
-            out *= 2*(-2*aij*bij/ x + aij**2/x**2 + aij/rij)/x**2 * np.exp(aij*rij / x)
-            print(out)
-    return out
+        for j in range(i+1, N):
+            r_vec = R[i] - R[j]
+            r     = np.linalg.norm(r_vec)
+            spin  = 1 if (i < N_up) == (j < N_up) else 0
+            a     = a_ij(spin)
+            b     = b_ij(spin, b_par, b_orth)
+            x     = 1 + b * r
+
+            u1 =  a / x**2                      # u′(r)
+            u2 = -2*a*b / x**3                 # u″(r)
+
+            # gradient contributions
+            g_ij = u1 * r_vec / r
+            g[i] +=  g_ij
+            g[j] -=  g_ij                      # opposite sign for particle j
+
+            # laplacian‑of‑log contributions (2‑D → +u′/r term)
+            lam_term = u2 + u1 / r
+            lam[i] += lam_term
+            lam[j] += lam_term
+
+    J = jastrow(N,R, N_up, b_par, b_orth)
+    total_lap = np.sum(lam + np.sum(g**2, axis=1))
+    return J * total_lap
 
 def gradient_phi(alpha, r,sigma):
     '''
@@ -280,17 +341,17 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
     if M == 1 or M == 3:
         for j in range(M):
             #print(i,j , "run\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
-            out += A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
+            out += A_inv[j,i] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
         #print("slater gradient . . . ",out)
     elif M==2: # if we only have a particle in the degenerate states, we average out the expectation value!
         out_1 = 0 
         out_2 = 0
         for j in range(M):
             #rint(i,j , "run*\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
-            out_1 += A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
-            out_2 += A_inv[i][j] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi)
+            out_1 += A_inv[j,i] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
+            out_2 += A_inv[j,i] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi)
         out = (out_1 + out_2) / 2
-#       print("slater gradient* . . . ",out)
+        print("fuck",out)
     else:
         out = [1, 1]
         print("asdsfasdfasdfasf")
@@ -298,7 +359,6 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
 
 def gradient_gradient_term(N,N_up,R,
                            A_inv_up,A_inv_down,
-                           det_up,det_down,
                            b_par,b_orth,sigma,use_chi=True):
     '''
     This function calculates the gradient gradient term of jastrow, or (2)
@@ -311,31 +371,27 @@ def gradient_gradient_term(N,N_up,R,
     output:
     - gradient gradient term of the full laplacian
     '''
-    out = 1
+    out = 0
 
     for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-            aij = a_ij(spin_alignment)
-            bij = b_ij(spin_alignment, b_par, b_orth)
-            x = 1+bij*rij
-            jastrow_prefactor = aij/ x**2 * np.exp(aij*rij / x)
-            jastrow_grad_piece = jastrow_prefactor* (R[i]-R[j]) #this guy should be a vector
-
-            if i < N_up and j < N_up: # i is up-spin particle, j is also
-                slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi) - slater_gradient(N_up,R[:N_up],A_inv_up,j,sigma,use_chi)
-            elif i < N_up and j >= N_up: # i is up-spin particle, j is down
-                #print("1------------\n",slater_gradient(N_up,R[:N_up],A_inv_up,i,det_up,sigma,use_chi))
-                #print("2------------\n",slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,det_down,sigma,use_chi))
-                slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,sigma,use_chi)
-            elif i >= N_up and j >= N_up: # i is down-spin particle, j is also
-                slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,sigma,use_chi) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j-N_up,sigma,use_chi)
-            out_placeholder = 0
-            for l in range(2):
-                #print("slatergrad",slater_grad, jastrow_grad_piece)
-                out_placeholder += jastrow_grad_piece[l] * slater_grad[l]
-            out *= out_placeholder
+        jastrow_grad_piece = np.zeros(2)
+        for j in range(N):
+            if i == j:
+                continue
+            else:
+                rij = np.linalg.norm(R[i] - R[j])
+                spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+                aij = a_ij(spin_alignment)
+                bij = b_ij(spin_alignment, b_par, b_orth)
+                sij = 1 if i < j else -1
+                x = 1+bij*rij
+                jastrow_prefactor = aij/ x**2 *sij
+                jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
+        if i < N_up:
+            slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi)
+        else:
+            slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,sigma,use_chi)
+        out += jastrow_grad_piece[0] * slater_grad[0] + jastrow_grad_piece[1] * slater_grad[1]
     return 2*out
 
 def ho_eigenvalue(alpha,omega):
@@ -372,7 +428,7 @@ def slater_laplacian_term(M, R, A_inv, sigma,omega=1):
         r_i = np.linalg.norm(R[i])
         for j in range(M):
             eigenvalue = ho_eigenvalue(alpha[j], omega)
-            out += A_inv[i][j] * (-2*eigenvalue+omega**2 *r_i**2) * single_particle_wf(alpha[j][2], R[i], sigma)
+            out += A_inv[j,i] * (-2*eigenvalue+omega**2 *r_i**2) * single_particle_wf(alpha[j][2], R[i], sigma)
     return out
 
 def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
@@ -401,9 +457,8 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
     laplacian_term_1 = det_up*det_down*jastrow_laplacian_fact
     grad_grad_term = gradient_gradient_term(N, N_up, R,
                                                 A_up_inv, A_down_inv,
-                                                det_up, det_down,
                                                 b_par, b_orth, sigma, use_chi)
-    laplacian_term_2 = det_up*det_down*grad_grad_term
+    laplacian_term_2 = psi*grad_grad_term
     slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
     laplacian_term_3 = psi * (slater_laplacian_up + slater_laplacian_down)

@@ -226,8 +226,8 @@ import libraryMetropolis as kin2
 import numpy as np
 importlib.reload(kin)
 # Parameters
-N = 5
-N_up = 3
+N = 2
+N_up = kin.N_up_choice(N)
 sigma = 1
 b_par = 1
 b_orth = 1
@@ -259,21 +259,19 @@ importlib.reload(kin)
 #wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
 partial_wf = partial(kin.total_wf,
                      N=N,
-                     N_up=N_up,
+                     N_up=kin.N_up_choice(N),
                      sigma=sigma,
                      b_par=b_par,
                      b_orth=b_orth,
                      use_chi=True,
                      return_A=True)
-kinetic_energy_mine = kin.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
-kinetic_energy_mine_2 = kin2.kinetic_energy_integrand(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
+kinetic_energy_mine = kin.kinetic_energy_integrand(N, kin.N_up_choice(N),R, sigma, b_par, b_orth, omega, use_chi)
 #kinetic_energy_mine_2 = kin.kinetic_energy_integrand_2(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
 f = lambda r: partial_wf(R=r)[0]
 f = lambda r: kin.total_wf(N, N_up, r, sigma, b_par, b_orth, use_chi=True, return_A=False)[0]
 
 kinetic_energy_np = kin.numerical_integrand(f, N,R)
 print("Kinetic energy (mine):", kinetic_energy_mine)
-print("Kinetic energy (mine2):", kinetic_energy_mine_2)
 #print("Kinetic energy (mine):", kinetic_energy_mine_2)
 print("Kinetic energy (numpy):", kinetic_energy_np)
 # -
