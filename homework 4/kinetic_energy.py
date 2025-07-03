@@ -361,6 +361,21 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
     #print("slater gradient . . . ",out)
     return out
 
+def jastrow_grad_anal(N,N_up,R,i,b_par,b_orth):
+    jastrow_grad_piece = np.zeros(2)
+    for j in range(N):
+        if i == j:
+            continue
+        else:
+            rij = np.linalg.norm(R[i] - R[j])
+            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+            aij = a_ij(spin_alignment)
+            bij = b_ij(spin_alignment, b_par, b_orth)
+            x = 1+bij*rij
+            jastrow_prefactor = aij/ x**2 
+            jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
+    return jastrow_grad_piece 
+
 def gradient_gradient_term(N,N_up,R,
                            A_inv_up,A_inv_down,
                            b_par,b_orth,sigma,use_chi=True):
@@ -380,19 +395,20 @@ def gradient_gradient_term(N,N_up,R,
     out = 0
 
     for i in range(N):
-        jastrow_grad_piece = np.zeros(2)
-        for j in range(N):
-            if i == j:
-                continue
-            else:
-                rij = np.linalg.norm(R[i] - R[j])
-                spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-                aij = a_ij(spin_alignment)
-                bij = b_ij(spin_alignment, b_par, b_orth)
-                sij = 1 if i < j else -1
-                x = 1+bij*rij
-                jastrow_prefactor = aij/ x**2 *sij
-                jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
+#        jastrow_grad_piece = np.zeros(2)
+        #for j in range(N):
+            #if i == j:
+                #continue
+            #else:
+                #rij = np.linalg.norm(R[i] - R[j])
+                #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+                #aij = a_ij(spin_alignment)
+                #bij = b_ij(spin_alignment, b_par, b_orth)
+                #sij = 1 if i < j else -1
+                #x = 1+bij*rij
+                #jastrow_prefactor = aij/ x**2 *sij
+                #jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
+        jastrow_grad_piece = jastrow_grad_anal(N,N_up,R,i,b_par,b_orth)
         if i < N_up:
             slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi)
         else:
@@ -460,7 +476,7 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
     A_up_inv = safe_invert_matrix(A_up)
     A_down_inv = safe_invert_matrix(A_down)
 
-
+    jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_orth)
     laplacian_term_1 = det_up*det_down*jastrow_laplacian_fact
 
     grad_grad_term = gradient_gradient_term(N, N_up, R,
@@ -481,7 +497,6 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_orth,omega=1,use_chi=True):
               "grad_grad_term_2", psi_alt*grad_grad_term_2)
     else:
         laplacian_term_2 = psi*grad_grad_term
-    jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_orth)
     slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
     laplacian_term_3 = psi * (slater_laplacian_up + slater_laplacian_down)
