@@ -164,124 +164,113 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 
   return delta
 
+
 # + [markdown] magic_args="kinetic energy calculation"
-# ## kinetic energy calculation
+# ## part 2: calculation of the kinetic energy
+#
 # Using
 # \begin{align*}
 #   \nabla ^2 (fg) = \left( \nabla ^2 f    \right) g + 2\boldsymbol{\nabla}f \cdot 
 #   \boldsymbol{\nabla}g + f \nabla ^2g
 # \end{align*}
 #    The kinetic energy
-# \begin{align}
-#  \nabla ^2 \Psi &=  \nabla ^2 \left(F D_\uparrow D_\downarrow\right)
-# \end{align}
-# $$
-#        \nabla^2 \Psi= \sum_i \left[   \underbrace{\left(\nabla _i ^2F\right)}_{\text{1}}D_\uparrow D_\downarrow +
-#        2\underbrace{\boldsymbol{\nabla}_i F \cdot  \boldsymbol{\nabla}_i (D_\uparrow
-#        D_\downarrow)}_{\text{2}} +
-#        F(
-#        \underbrace{(\nabla ^2_i D_\uparrow) D_\downarrow + D_\uparrow \nabla_i ^2
-#        D_\downarrow)}_{\text{3}}\right]
-# $$
-# The first term
 # \begin{align*}
-#     (1) = \prod_{i<j}\left[\frac{-2a_{ij}b_{ij}}{(1+b_{ij}r_{ij})^{3}} +
-#     \frac{a_{ij}^2}{(1+b_{ij}r_{ij})^{4}}+
-#     \frac{1}{r_{ij}}\frac{a_{ij}}{(1+b_{ij}r_{ij})^2}\right]e^{\frac{a_{ij}r_{ij}}{1+b_{ij}r_{ij}}}
+#        \nabla ^2 \Psi &=  \nabla ^2 \left(J D_\uparrow D_\downarrow\right)\nonumber \\ 
+#        &= \sum_i \left[   \left(\nabla _i ^2J\right)D_\uparrow D_\downarrow +
+#        2\boldsymbol{\nabla}_i J \cdot  \boldsymbol{\nabla}_i (D_\uparrow
+#        D_\downarrow) +
+#        J((\nabla ^2_i D_\uparrow) D_\downarrow + D_\uparrow \nabla_i ^2
+#        D_\downarrow)\right]
 # \end{align*}
-# then 
+# The first term is computed as
 # \begin{align*}
-#     \boldsymbol{\nabla} F \cdot \boldsymbol{\nabla} \left(D_\uparrow D_\downarrow\right)
-#     &= 2\prod_{i\neq j}\hat{\textbf{x}}_{jk} \frac{a_{ij}}{(1+b_{ij}r_{ij})^2} \exp\{...\} \cdot
-#     \boldsymbol{\nabla}(D_\uparrow D_\downarrow)
+#     \nabla ^2_i J &= \nabla ^2 _i \prod_{j<k} e^{\log f_{jk}}\nonumber \\ 
+#     &=\nabla_i ^2 \exp \sum_{j < k} f_{jk} = \nabla _i ^2 \exp \left(\frac{1}{2}\sum_{i\neq
+#     k}f_{jk}\right)
 # \end{align*}
-# and the gradient of Slater can be computed from known matrix calculus relations:
+# We exploit the identity
+# \begin{align*}
+#     \nabla^2 f(g(\textbf{x})) &= f^{\prime\prime} (g(\textbf{x}))
+#    \left|\boldsymbol{\nabla}g(x)\right|^2  + f^\prime (g(\textbf{x})) \nabla ^2 g.
+# \end{align*}
+# (Skipping a few lines of algebra), I find
+# \begin{align*}
+#     \nabla _i ^2 J &= J \left(\left|\sum_{k\neq i}\frac{f^\prime
+#     _{ki}}{f_{ki}}\hat{\textbf{x}}_{jk}\right|^2 + \sum_{k\neq i}\nabla _i ^2 \log f_{ki}\right)
+# \end{align*}
+# where
+# \begin{align*}
+#     \nabla _i ^2 \log f_{ki} &= \frac{f^{\prime\prime}_{ki}}{f_{ki}} -
+#     \frac{(f_{ki}^\prime )^2}{f_{ki}^2} + \frac{1}{r_{ki}} \frac{f_{ki}^\prime }{f_{ki}}.
+# \end{align*}
+#
+# Then 
+# \begin{align*}
+#     \boldsymbol{\nabla} J \cdot \boldsymbol{\nabla} \left(D_\uparrow D_\downarrow\right)
+#     &= \sum_{i} \left(\nabla _i J\right)\nabla _i\left(D_\uparrow D_\downarrow\right).
+# \end{align*}
+# The gradient of Jastrow is
+# \begin{align*}
+#     \nabla _i J &= J \nabla _i \log J\nonumber \\ 
+#     &= \frac{1}{2}J \nabla _i \left(\sum_{jk,j\neq k} \ln f_{jk}\right)\nonumber \\ 
+#     &= J\sum_{k,k\neq i} \frac{f_{ik}^\prime }{f_{ik}} \hat{\textbf{r}}_{ik}
+# \end{align*}
+# where the $1 /2$ (coming from  $2\sum_{j<k} = \sum_{j\neq k}$) is reabsorbed since we get
+# two equal terms: one from $i=j$ and one from $i=k$.
+#
+# The gradient of Slater can be computed from known matrix calculus relations:
 # \begin{align*}
 # \frac{1}{\left|D\right|}\boldsymbol{\nabla}_i \left|D(\textbf{R})\right|    &= \sum _j
-# \boldsymbol{\nabla}_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})\nonumber \\ 
-# \frac{1}{\left|D\right|}\nabla ^2_i \left|D(\textbf{R})\right|    &= \sum _j
-# \nabla^2_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})
+# \boldsymbol{\nabla}_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})
 # \end{align*}
 # and the gradient of a single wavefunction
 # \begin{align*}
-#     \boldsymbol{\nabla}_i \phi_{000} (r_i)& = \frac{\textbf{r}_i}{\sigma^2}\phi_{000}\nonumber \\ 
-# \boldsymbol{\nabla}_i \phi_{01 \pm } &= \begin{bmatrix} x_i + \sigma \\ y_i \pm i\sigma
-# \end{bmatrix} \frac{1}{\sigma^2} \phi_{01 \pm }
+#     \boldsymbol{\nabla}_i \phi_{000} (r_i)& =
+#     -\frac{\textbf{r}_i}{\sigma^2}\phi_{000}\nonumber \\
+#     \boldsymbol{\nabla}_i \chi_{+} &= \begin{bmatrix} 1- x_{i}^2/\sigma^2 \\ -x_i y_i /
+#     \sigma^2
+# \\\end{bmatrix} \frac{1}{\sigma^2 \sqrt{\pi} } e^{- (x_{i}^2 +y_{i}^2) / 2 \sigma^2}\nonumber \\ 
+#     \boldsymbol{\nabla}_i \chi_{-} &= \begin{bmatrix} -x y/\sigma^2 \\ 1 -y_i ^2 /
+#     \sigma^2
+# \\\end{bmatrix} \frac{1}{\sigma^2 \sqrt{\pi} } e^{- (x^2 +y^2) / 2 \sigma^2}.
 # \end{align*}
-# and the laplacians
+# Finally for the Slater laplacian term, we employ a similar result:
 # \begin{align*}
-#    \nabla ^2 \phi_{000} &= \left(\frac{2}{\sigma^2} +
-#    \left(\frac{r^2}{\sigma^4}\right)\right)\phi_{000}\nonumber \\ 
-#    \nabla ^2 \phi_{01 \pm }&= \frac{1}{\sqrt{\pi \sigma^2}} \frac{1}{\sigma^3}\left[2 +
-#    \frac{x}{\sigma^2} \left(1+\frac{x}{\sigma^2}\right) + \frac{y}{\sigma^2}\left(\pm i +
-#    \frac{y}{\sigma^2}\right)\right]e^{\frac{x^2+y^2}{2\sigma^2}}
+# \frac{1}{\left|D\right|}\nabla ^2_i \left|D(\textbf{R})\right|    &= \sum _j
+# \nabla^2_i \phi_j (\textbf{r}_i) d_{ji}^{-1}(\textbf{R})
 # \end{align*}
+# where the single-particle laplacians are found via the equations of motion
+# \begin{align*}
+#   \left(  -\frac{1}{2}\nabla_i ^2 +\frac{1}{2}\omega^2 r_i^2\right) \phi_j (r_i) =
+#   \lambda_j \phi_j
+#   (r_i)
+# \end{align*}
+# or 
+# \begin{align*}
+#     \nabla_i ^2 \phi_j (r_i) = \left(\omega^2 r_i^2 - 2\lambda_j\right)\phi_j(r_i)
+# \end{align*}
+# for 
+# \begin{align*}
+#     \lambda_j = \omega (2n + l + 1).
+# \end{align*}
+# These calculations, put together, give us the first way of computing the integrand of the
+# kinetic energy.
 #
-
+# -
+# ### sample run
 
 # +
-import importlib
-import kinetic_energy as kin
-import libraryMetropolis as kin2
-import numpy as np
-importlib.reload(kin)
-# Parameters
-N = 2
-N_up = kin.N_up_choice(N)
+import libraryMetropolis as lib
+
+N_test = 5
+R_test = np.random.uniform(0,2,(N_test,2))
+b_par = 1 
+b_anti = 1
 sigma = 1
-b_par = 1
-b_orth = 1
-omega = 1
-use_chi = True
 
-# Define a grid of positions (e.g., 3 particles in 2D)
-
-    
-box_size = 1
-R = np.random.uniform(0, box_size, size=(N, 2))
-#phi0 =  partial(kin.single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
-#phi_plus =  partial(kin.single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
-#phi_minus =  partial(kin.single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
-
-#print(kin.gradient_phi([0,0,0], R[0], sigma))
-
-#det,A_up = kin.slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus,return_A = True)
-#A_inv_up = kin.safe_invert_matrix(A_up)
-#det,A_down = kin.slater_det(N-N_up, R[N_up:], phi0, phi_plus, phi_minus,return_A = True)
-#A_inv_down = kin.safe_invert_matrix(A_down)
-
-#up_slater = kin.slater_gradient(N_up, R[:N_up],A_inv_up,0,det,sigma)
-#down_slater = kin.slater_gradient(N-N_up, R[N_up:],A_inv_down,0,det,sigma)
-#print("up slater---------\n", up_slater)
-#print("down slater---------\n", down_slater)
-from functools import partial
-importlib.reload(kin)
-#wavefunction = kin.total_wf(N, N_up, R, sigma, b_par, b_orth, use_chi = use_chi, return_A=False)[0]
-partial_wf = partial(kin.total_wf,
-                     N=N,
-                     N_up=kin.N_up_choice(N),
-                     sigma=sigma,
-                     b_par=b_par,
-                     b_orth=b_orth,
-                     use_chi=True,
-                     return_A=True)
-kinetic_energy_mine = kin.kinetic_energy_integrand(N, kin.N_up_choice(N),R, sigma, b_par, b_orth, omega, use_chi)
-#kinetic_energy_mine_2 = kin.kinetic_energy_integrand_2(N, N_up,R, sigma, b_par, b_orth, omega, use_chi)
-f = lambda r: partial_wf(R=r)[0]
-f = lambda r: kin.total_wf(N, N_up, r, sigma, b_par, b_orth, use_chi=True, return_A=False)[0]
-
-kinetic_energy_np = kin.numerical_integrand(f, N,R)
-print("Kinetic energy (mine):", kinetic_energy_mine)
-#print("Kinetic energy (mine):", kinetic_energy_mine_2)
-print("Kinetic energy (numpy):", kinetic_energy_np)
+K_integrand = lib.kinetic_energy_integrand(N_test,lib.N_up_choice(N_test),R_test,sigma,b_par,b_anti,omega)
+print(K_integrand)
 # -
-
-
-# try changing h
-print(kin.numerical_integrand(f, N,R, h = 1e-3))
-print(kin.numerical_integrand(f, N,R, h = 1e-4))
-print(kin.numerical_integrand(f, N,R, h = 1e-5))
-
 #
 
 acc, counter=0,0

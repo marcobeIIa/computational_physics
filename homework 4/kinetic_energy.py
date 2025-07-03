@@ -53,7 +53,7 @@ def A_matrix_creator(M, R, phi1, phi2, phi3):
             A[i, j] = basis_functions[j](r=r)
     return A
 
-def safe_invert_matrix(A, rcond=1e-15, return_A_alt = False):
+def safe_invert_matrix(A, rcond=1e-15):
     """
     Computes a pseudoinverse if A is near-singular.
 
