@@ -258,6 +258,12 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 #
 # -
 # ### sample run
+#
+# note that the integrand is lacking the 
+# \begin{align}
+# -\frac{\hbar ^2}{2m}
+# \end{align}
+# prefactor ;)
 
 # +
 import libraryMetropolis as lib

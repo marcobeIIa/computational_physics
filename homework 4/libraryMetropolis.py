@@ -142,7 +142,7 @@ def jastrow(N,R,N_up,b_par,b_anti):
 def jastrow_laplacian(N, N_up,R, b_par, b_anti):
     '''
     b_par, b_anti : jastrow parameters for parallel / antiparallel spins
-    returns: laplacian of jastrow factor
+    returns: laplacian of jastrow factor lapl J / J
     '''
     R = np.asarray(R, float)          # shape (N, 2)
     N  = len(R)
@@ -171,9 +171,9 @@ def jastrow_laplacian(N, N_up,R, b_par, b_anti):
             lam[i] += lam_term
             lam[j] += lam_term
 
-    J = jastrow(N,R, N_up, b_par, b_anti)
+#    J = jastrow(N,R, N_up, b_par, b_anti)
     total_lap = np.sum(lam + np.sum(g**2, axis=1))
-    return J * total_lap
+    return total_lap
 
 def gradient_phi(alpha, r,sigma):
     '''
@@ -273,14 +273,8 @@ def total_wf(N,N_up, R, sigma, b_par, b_anti, use_chi=True, return_A = True, jj=
             det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
             det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
         elif return_A_alt:
-            if N_up == 2:
-                det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_minus, phi_plus, return_A = True)
-                det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
-            elif N_down ==2:
-                det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
-                det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_minus, phi_plus, return_A = True)
-            else:
-                print("N_up not 2, N_down not 2, why would you need return_A_alt?")
+            det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_minus, phi_plus, return_A = True)
+            det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_minus, phi_plus, return_A = True)
         else:
             det_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = False)
             det_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = False)
@@ -321,7 +315,9 @@ def total_wf(N,N_up, R, sigma, b_par, b_anti, use_chi=True, return_A = True, jj=
     else:
         raise ValueError("to be implemented.")
 
-def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
+
+
+def slater_gradient(M,R,A_inv,i,sigma,use_chi=True,switch=False):
     ''' 
     This function calculates the gradient of the Slater determinant
     A_inv - the inverse of the Slater matrix
@@ -331,8 +327,10 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
     - (nabla_i Det) / Det
     '''
     out = np.zeros(2)
-    alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
-    alpha_alt = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
+    if not switch:
+        alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
+    else:
+        alpha = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
     for j in range(M):
         #print(i,j , "run\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
         out += A_inv[j,i] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi)
@@ -340,6 +338,19 @@ def slater_gradient(M,R,A_inv,i,sigma,use_chi=True):
     return out
 
 def jastrow_grad_anal(N,N_up,R,i,b_par,b_anti):
+    '''
+    This function calculates the gradient of the jastrow factor
+    input:
+    N          : Number of particles
+    N_up       : Number of up-spin particles
+    R          : Array of shape (N, 2), each row is [x, y] of particle
+    i          : index of the particle wrt which we compute the gradient
+    b_par      : Jastrow parameter for parallel spins
+    b_anti     : Jastrow parameter for antiparallel spins
+    output:
+    - gradient of the log of jastrow factor wrt i-th particle
+    nabla_i J / J
+    '''
     jastrow_grad_piece = np.zeros(2)
     for j in range(N):
         if i == j:
@@ -357,7 +368,7 @@ def jastrow_grad_anal(N,N_up,R,i,b_par,b_anti):
 
 def gradient_gradient_term(N,N_up,R,
                            A_inv_up,A_inv_down,
-                           b_par,b_anti,sigma,use_chi=True):
+                           b_par,b_anti,sigma,use_chi=True,switch_up=False,switch_down=False):
     '''
     This function calculates the gradient gradient term of jastrow, or (2)
     input:
@@ -374,24 +385,11 @@ def gradient_gradient_term(N,N_up,R,
     out = 0
 
     for i in range(N):
-#        jastrow_grad_piece = np.zeros(2)
-        #for j in range(N):
-            #if i == j:
-                #continue
-            #else:
-                #rij = np.linalg.norm(R[i] - R[j])
-                #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-                #aij = a_ij(spin_alignment)
-                #bij = b_ij(spin_alignment, b_par, b_anti)
-                #sij = 1 if i < j else -1
-                #x = 1+bij*rij
-                #jastrow_prefactor = aij/ x**2 *sij
-                #jastrow_grad_piece += jastrow_prefactor* (R[i]-R[j])/rij #this guy should be a vector
         jastrow_grad_piece = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
         if i < N_up:
-            slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi)
+            slater_grad = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi,switch_up)
         else:
-            slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,sigma,use_chi)
+            slater_grad = slater_gradient(N-N_up,R[N_up:],A_inv_down,i-N_up,sigma,use_chi,switch_down)
         out += jastrow_grad_piece[0] * slater_grad[0] + jastrow_grad_piece[1] * slater_grad[1]
     return 2*out
 
@@ -407,7 +405,7 @@ def ho_eigenvalue(alpha,omega):
     return omega*(2*n + l + 1)
 
 
-def slater_laplacian_term(M, R, A_inv, sigma,omega=1):
+def slater_laplacian_term(M, R, A_inv, sigma,omega=1,switch=False):
     """
     Compute the Laplacian of the Slater determinant for M orbitals.
 
@@ -425,6 +423,8 @@ def slater_laplacian_term(M, R, A_inv, sigma,omega=1):
     """
     out = 0
     alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
+    if switch:
+        alpha = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
     for i in range(M):
         r_i = np.linalg.norm(R[i])
         for j in range(M):
@@ -432,7 +432,7 @@ def slater_laplacian_term(M, R, A_inv, sigma,omega=1):
             out += A_inv[j,i] * (-2*eigenvalue+omega**2 *r_i**2) * single_particle_wf(alpha[j][2], R[i], sigma)
     return out
 
-def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
+def kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
     '''
     finally, this function returnst the integrand of the kinetic energy
     input:
@@ -456,37 +456,122 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
     A_down_inv = safe_invert_matrix(A_down)
 
     jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_anti)
-    laplacian_term_1 = det_up*det_down*jastrow_laplacian_fact
+    laplacian_term_1 = psi**2*jastrow_laplacian_fact
 
     grad_grad_term = gradient_gradient_term(N, N_up, R,
                                                 A_up_inv, A_down_inv,
                                                 b_par, b_anti, sigma, use_chi)
 
-#alternative calculation with alternative oribtals for the gradient-gradient term
-    if N_up == 2 or N_down ==2:
-        psi_alt,det_up,det_down,A_up_alt,A_down_alt = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False, return_A_alt=True)
-        A_up_inv_alt = safe_invert_matrix(A_up_alt)
-        A_down_inv_alt = safe_invert_matrix(A_down_alt)
-        grad_grad_term_2 = gradient_gradient_term(N, N_up, R,
-                                                    A_up_inv_alt, A_down_inv_alt,
-                                                    b_par, b_anti, sigma, use_chi)
-        laplacian_term_2 = 1/2*(psi*grad_grad_term+psi_alt*grad_grad_term_2)
-        print("laplacian_term_2", laplacian_term_2,
-              "grad_grad_term", psi*grad_grad_term,
-              "grad_grad_term_2", psi_alt*grad_grad_term_2)
-    else:
-        laplacian_term_2 = psi*grad_grad_term
+    laplacian_term_2 = psi**2*grad_grad_term
     slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
-    laplacian_term_3 = psi * (slater_laplacian_up + slater_laplacian_down)
+    laplacian_term_3 = psi**2 * (slater_laplacian_up + slater_laplacian_down)
 
-    laplacian = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
-    integrand = psi * (laplacian_term_1 + laplacian_term_2 + laplacian_term_3)
-    print("psi:", psi,
-          "term 1:",laplacian_term_1, 
-          "term 2:",laplacian_term_2, 
-          "term 3:",laplacian_term_3)
+    integrand = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
+    #print("psi:", psi,
+          #"term 1:",laplacian_term_1, 
+          #"term 2:",laplacian_term_2, 
+          #"term 3:",laplacian_term_3)
     return integrand
+
+
+def kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
+    '''
+    finally, this function returnst the integrand of the kinetic energy
+    input:
+    - N         : Number of particles
+    - N_up      : Number of up-spin particles
+    - R         : Array of shape (N, 2), each row is [x, y] of particle
+    - sigma     : Sigma parameter for the harmonic oscillator wavefunction
+    - b_par     : Jastrow parameter for parallel spins
+    - b_anti    : Jastrow parameter for antiparallel spins
+    - omega     : Harmonic oscillator frequency (default 1)
+    - use_chi   : If True, use chi_m wavefunction, otherwise use phi_nlm
+    output:
+    integrand of the kinetic energy operator, i.e.
+    psi lapl psi
+    '''
+    if N ==4:
+        raise ValueError("N=4 is not implemented yet, use N=1,2,3,5,6")
+    N_down = N - N_up
+    psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
+    A_up_inv = safe_invert_matrix(A_up)
+    A_down_inv = safe_invert_matrix(A_down)
+
+    jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_anti)
+    laplacian_term_1 = psi**2*jastrow_laplacian_fact
+
+    grad_grad_term = gradient_gradient_term(N, N_up, R,
+                                                A_up_inv, A_down_inv,
+                                                b_par, b_anti, sigma, use_chi,
+                                                switch_up = True, switch_down = True)
+
+    laplacian_term_2 = psi**2*grad_grad_term
+    slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega,switch=True)
+    slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega,switch=True)
+    laplacian_term_3 = psi**2 * (slater_laplacian_up + slater_laplacian_down)
+
+    integrand = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
+    #print("psi:", psi,
+          #"term 1:",laplacian_term_1, 
+          #"term 2:",laplacian_term_2, 
+          #"term 3:",laplacian_term_3)
+    return integrand
+
+def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
+    '''
+    this is the worst thing i've had to code in my career
+    '''
+    return 0.5*(kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
+                +kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega,use_chi))
+
+
+def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True): 
+    '''
+    second way of computing the kinetic energy, with
+    input:
+    - N         : Number of particles
+    - N_up      : Number of up-spin particles
+    - R         : Array of shape (N, 2), each row is [x, y] of particle
+    - sigma     : Sigma parameter for the harmonic oscillator wavefunction
+    - b_par     : Jastrow parameter for parallel spins
+    - b_anti    : Jastrow parameter for antiparallel spins
+    - omega     : Harmonic oscillator frequency (default 1)
+    - use_chi   : If True, use chi_m wavefunction, otherwise use phi_nlm
+    output:
+    integrand of the kinetic energy operator, i.e.
+    psi lapl psi
+    '''
+    first_bit = 0.5 * kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
+
+    psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
+    A_up_inv = safe_invert_matrix(A_up)
+    A_down_inv = safe_invert_matrix(A_down)
+    for i in range(N):
+        if i < N_up:
+            grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
+        else:
+            grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
+        tot_grad += np.dot(grad,grad)
+    tot_grad *= psi**2
+
+    psi_a,det_up_a,det_down_a,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
+    A_up_inv_a = safe_invert_matrix(A_up_a)
+    A_down_inv_a = safe_invert_matrix(A_down_a)
+    tot_grad_alt = 0
+    for i in range(N_up):
+        grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti) + slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
+        tot_grad_alt += np.dot(grad,grad)
+    for i in range(N_up,N):
+        grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
+        tot_grad_alt += np.dot(grad,grad)
+    tot_grad_alt*=psi_a**2
+    out = (tot_grad + tot_grad_alt)/2
+    if N_up == 2 and N-N_up ==2:
+        print("N=4 case broen")
+    return 1/2 * (first_bit - out)
+
+
 
 
 def wf_laplacian(R,wavefunction, sigma, h=1e-4):
@@ -558,135 +643,6 @@ def N_up_choice(N):
     else:
         raise ValueError("N must be between 1 and 6")
     return N_up
-def gradient_J_squared(N,N_up,R,b_par,b_anti):
-    '''
-    (grad J)^2, i.e. the jastrow factor
-    input:
-    - N         : Number of particles
-    - N_up      : Number of up-spin particles
-    - R         : Array of shape (N, 2), each row is [x, y] of particle
-    - b_par     : Jastrow parameter for parallel spins
-    - b_anti    : Jastrow parameter for antiparallel spins
-    output:
-    - (grad J)^2, needs a Det_up Det_down to compute the actual contribution
-    '''
-    log_out = 0
-    for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-            aij = a_ij(spin_alignment)
-            bij = b_ij(spin_alignment, b_par, b_anti)
-            x = 1+bij*rij            
-            log_jastrow_prefactor = np.abs(np.log(aij)  - 2 * np.log(x) + aij*rij / x)
-            log_out +=2*log_jastrow_prefactor
-    log_out += np.log(2)*N*(N-1)/2 #number of pairs
-    out = np.exp(log_out)
-    return out
-
-def slater_gradient_squared(M,R,A_inv,sigma,use_chi=True):
-    ''' 
-    This function calculates the square gradient of the Slater determinant
-    A_inv - the inverse of the Slater matrix
-    i - i-th partiche wrt which we're computing the gradient 
-    det - the Slater determinant itself
-    returns:
-    - sum_j(nabla_j Det)^2 / Det^2
-    '''
-    out = np.zeros(2)
-    alpha = [[0, 0, 0], [0, 1, 1], [0, 1, -1]]  # Assuming three basis functions
-    alpha_alt = [[0, 0, 0], [0, 1, -1], [0, 1, 1]]  # Assuming three basis functions
-    for i in range(M):
-        if M == 1 or M == 3:
-            for j in range(M):
-                #print(i,j , "run\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
-                out += (A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi))**2
-            #print("slater gradient . . . ",out)
-        elif M==2: # if we only have a particle in the degenerate states, we average out the expectation value!
-            out_1 = 0 
-            out_2 = 0
-            for j in range(M):
-                #rint(i,j , "run*\n", "A_inv =", A_inv, "\n alpha=",alpha, "\n R = ",R)
-                out_1 += (A_inv[i][j] * gradient_single_particle_wf(alpha[j][2], R[i], sigma,use_chi=use_chi))**2
-                out_2 += (A_inv[i][j] * gradient_single_particle_wf(alpha_alt[j][2], R[i], sigma,use_chi=use_chi))**2
-            out += (out_1 + out_2) / 2
-    #       print("slater gradient* . . . ",out)
-        else:
-            out = 1.
-    #       print("asdsfasdfasdfasf")
-    return out
-
-def cross_term(N,N_up,R,
-               A_inv_up,A_inv_down,
-               sigma,b_par,b_anti):
-    '''
-    cross term in (grad psi) ^2, something like grad J * grad (Det Det)
-    input:
-    - N         : Number of particles
-    - N_up      : Number of up-spin particles
-    - R         : Array of shape (N, 2), each row is [x, y] of particle
-    - A_inv_up  : Inverse of the Slater matrix for up-spin particles
-    - A_inv_down: Inverse of the Slater matrix for down-spin particles
-    - sigma     : Sigma parameter for the harmonic oscillator wavefunction
-    - b_par     : Jastrow parameter for parallel spins
-    - b_anti    : Jastrow parameter for antiparallel spins
-    output:
-    - cross term / (psi D_up D_down) (to be reintegrated)
-    '''
-    out = 1
-    for i in range(N):
-        for j in range(i+1,N):
-            rij = np.linalg.norm(R[i] - R[j])
-            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-            aij = a_ij(spin_alignment)
-            bij = b_ij(spin_alignment, b_par, b_anti)
-            x = 1+bij*rij            
-            jastrow_prefactor =aij/x**2 * np.exp(aij*rij / x)
-            if i < N_up and j < N_up:
-                spin_v_factor = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi=True) - slater_gradient(N_up,R[:N_up],A_inv_up,j,sigma,use_chi=True)
-            if i < N_up and j > N_up:
-                spin_v_factor = slater_gradient(N_up,R[:N_up],A_inv_up,i,sigma,use_chi=True) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j,sigma,use_chi=True)
-            else:
-                spin_v_factor = slater_gradient(N-N_up,R[N_up:],A_inv_down,i,sigma,use_chi=True) - slater_gradient(N-N_up,R[N_up:],A_inv_down,j,sigma,use_chi=True)
-            scalar_product = 0
-            for l in range(2):
-                scalar_product+= spin_v_factor[l] * (R[i][l] - R[j][l])/rij
-            out*= scalar_product * jastrow_prefactor
-    out *= 2
-    return out
-
-def gradient_squared_full_term(N,N_up,R,sigma,b_par,b_anti,use_chi=True):
-    '''
-    put together all the terms in the gradient-gradient bit of the second approach to kinetic energy evaluation
-    input:
-    - N         : Number of particles
-    - N_up      : Number of up-spin particles
-    - R         : Array of shape (N, 2), each row is [x, y] of particle
-    - sigma     : Sigma parameter for the harmonic oscillator wavefunction
-    - b_par     : Jastrow parameter for parallel spins
-    - b_anti    : Jastrow parameter for antiparallel spins
-    - use_chi   : If True, use chi_m wavefunction, otherwise use phi_nlm
-    output:
-    - gradient gradient term of the full laplacian
-    '''
-    psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
-
-    term_1 = gradient_J_squared(N,N_up,R,b_par,b_anti) * det_up * det_down
-    sl_gr_sr = slater_gradient_squared(N_up, R[:N_up], A_up, sigma, use_chi) + slater_gradient_squared(N-N_up, R[N_up:], A_down, sigma, use_chi)
-    term_2 = sl_gr_sr * psi **2
-    term_3 = cross_term(N,N_up,R,A_up,A_down,sigma,b_par,b_anti) * psi * det_up * det_down
-    return term_1 + term_2 + term_3
-
-def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True): 
-    '''
-    second way of computing the kinetic energy, with
-    1/2 * (psi lapl psi -  nabla^2 psi / psi)
-    in place of psi lapl psi.
-    input: same as kinetic_energy_integrand
-    output: integrand of the kinetic energy operator, same as kinetic_energy_integrand
-    '''
-    return 1/2 * (kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi) - gradient_squared_full_term(N,N_up,R,sigma,b_par,b_anti,use_chi))
-
 
 
 
