@@ -521,8 +521,9 @@ def kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
 def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
     '''
     this is the worst thing i've had to code in my career
+    returns -1/2 lapl psi / psi
     '''
-    return 0.5*(kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
+    return -0.25*(kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
                 +kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega,use_chi))
 
 
@@ -540,9 +541,9 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     - use_chi   : If True, use chi_m wavefunction, otherwise use phi_nlm
     output:
     integrand of the kinetic energy operator, i.e.
-    psi lapl psi
+    -1/4 psi lapl psi + 1/4 grad psi grad psi
     '''
-    first_bit = 0.5 * kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
+    first_bit = kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
 
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
     A_up_inv = safe_invert_matrix(A_up)
@@ -554,7 +555,6 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
         else:
             grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
         tot_grad += np.dot(grad,grad)
-    tot_grad *= psi**2
 
     psi_a,det_up_a,det_down_a,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
     A_up_inv_a = safe_invert_matrix(A_up_a)
@@ -566,11 +566,10 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     for i in range(N_up,N):
         grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
         tot_grad_alt += np.dot(grad,grad)
-    tot_grad_alt*=psi_a**2
     out = (tot_grad + tot_grad_alt)/2
     if N_up == 2 and N-N_up ==2:
         print("N=4 case broen")
-    return 1/2 * (first_bit - out)
+    return 0.5*first_bit + 0.25*out
 
 
 
