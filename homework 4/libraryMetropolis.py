@@ -456,16 +456,16 @@ def kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     A_down_inv = safe_invert_matrix(A_down)
 
     jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_anti)
-    laplacian_term_1 = psi**2*jastrow_laplacian_fact
+    laplacian_term_1 = jastrow_laplacian_fact
 
     grad_grad_term = gradient_gradient_term(N, N_up, R,
                                                 A_up_inv, A_down_inv,
                                                 b_par, b_anti, sigma, use_chi)
 
-    laplacian_term_2 = psi**2*grad_grad_term
+    laplacian_term_2 = grad_grad_term
     slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega)
-    laplacian_term_3 = psi**2 * (slater_laplacian_up + slater_laplacian_down)
+    laplacian_term_3 = (slater_laplacian_up + slater_laplacian_down)
 
     integrand = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
     #print("psi:", psi,
@@ -499,17 +499,17 @@ def kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     A_down_inv = safe_invert_matrix(A_down)
 
     jastrow_laplacian_fact = jastrow_laplacian(N, N_up, R, b_par, b_anti)
-    laplacian_term_1 = psi**2*jastrow_laplacian_fact
+    laplacian_term_1 = jastrow_laplacian_fact
 
     grad_grad_term = gradient_gradient_term(N, N_up, R,
                                                 A_up_inv, A_down_inv,
                                                 b_par, b_anti, sigma, use_chi,
                                                 switch_up = True, switch_down = True)
 
-    laplacian_term_2 = psi**2*grad_grad_term
+    laplacian_term_2 = grad_grad_term
     slater_laplacian_up = slater_laplacian_term(N_up, R[:N_up], A_up_inv, sigma, omega,switch=True)
     slater_laplacian_down = slater_laplacian_term(N_down, R[N_up:], A_down_inv, sigma, omega,switch=True)
-    laplacian_term_3 = psi**2 * (slater_laplacian_up + slater_laplacian_down)
+    laplacian_term_3 = (slater_laplacian_up + slater_laplacian_down)
 
     integrand = laplacian_term_1 + laplacian_term_2 + laplacian_term_3
     #print("psi:", psi,
@@ -658,8 +658,8 @@ def Metropolisguess(r,delta):
 def Metropolis(N, N_up, R, sigma, b_par, b_anti, delta, counter, acc ,jj):
 
     Rn = Metropolisguess(R,delta)
-    psi, det_up, det_down = total_wf(N,N_up,R,sigma,b_par,b_anti,use_chi=True,return_A=False,jj=jj)
-    psinew, det_upnew, det_downnew = total_wf(N,N_up,Rn,sigma,b_par,b_anti,use_chi=True,return_A=False,jj=jj)
+    psi, _, _ = total_wf(N,N_up,R,sigma,b_par,b_anti,use_chi=True,return_A=False,jj=jj)
+    psinew, _, _ = total_wf(N,N_up,Rn,sigma,b_par,b_anti,use_chi=True,return_A=False,jj=jj)
 
     p=psinew**2/psi**2
     if p>1:
