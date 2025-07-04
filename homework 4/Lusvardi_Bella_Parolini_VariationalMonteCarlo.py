@@ -256,14 +256,12 @@ def delta_choice(x01,y01,x02,y02,x03,y03,delta,s,N_delta,counter):
 # These calculations, put together, give us the first way of computing the integrand of the
 # kinetic energy.
 #
+# For the second way of computing the kinetic energy, all the pieces are actually already there. We are lacking the
+# \begin{align}
+#     \frac{1}{4\Psi ^2}\left( \sum_i \nabla_i \Psi \right) ^2 = \frac{1}{4} \left[\sum_i\left(\frac{\nabla J}{J} + \frac{\nabla D_\uparrow}{D_\uparrow}+ \frac{\nabla D_\downarrow}{D_\downarrow}\right) \right]^2
+# \end{align}
 # -
 # ### sample run
-#
-# note that the integrand is lacking the 
-# \begin{align}
-# -\frac{\hbar ^2}{2m}
-# \end{align}
-# prefactor ;)
 
 # +
 import libraryMetropolis as lib

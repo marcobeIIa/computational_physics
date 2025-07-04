@@ -548,28 +548,39 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
     A_up_inv = safe_invert_matrix(A_up)
     A_down_inv = safe_invert_matrix(A_down)
+    jastrow = np.zeros(2)
+    slater = np.zeros(2)
     tot_grad=0
     for i in range(N):
+        jastrow+= jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
         if i < N_up:
-            grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
+            slater += slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
         else:
-            grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
-        tot_grad += np.dot(grad,grad)
+            slater += slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
+    grad = jastrow + slater
+    tot_grad = np.dot(grad,grad)
 
     psi_a,det_up_a,det_down_a,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
     A_up_inv_a = safe_invert_matrix(A_up_a)
     A_down_inv_a = safe_invert_matrix(A_down_a)
+    jastrow_a = np.zeros(2)
+    slater_a = np.zeros(2)
     tot_grad_alt = 0
-    for i in range(N_up):
-        grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti) + slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
-        tot_grad_alt += np.dot(grad,grad)
-    for i in range(N_up,N):
-        grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
-        tot_grad_alt += np.dot(grad,grad)
+    for i in range(N):
+        jastrow_a += jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
+        if i < N_up:
+            slater_a += slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
+        else:
+            slater_a+= slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
+
+    grad_a = jastrow_a + slater_a
+    tot_grad_alt += np.dot(grad_a,grad_a)
+    print(tot_grad, tot_grad_alt)
     out = (tot_grad + tot_grad_alt)/2
     if N_up == 2 and N-N_up ==2:
         print("N=4 case broen")
-    return 0.5*first_bit + 0.25*out
+#    return first_bit
+    return .5*first_bit + 0.25*out
 
 
 
@@ -617,9 +628,9 @@ def numerical_integrand(Psi,N, R, h=1e-4,return_laplacian = False):
             dR = np.zeros_like(R)
             dR[i,j] = h
             laplacian += (Psi(R + dR) - 2 * Psi(R) + Psi(R - dR)) / h**2
-    integrand = laplacian * Psi(R)
+    integrand = laplacian / Psi(R)
     if return_laplacian == False:
-        return integrand
+        return -0.5*integrand
     else:
         return laplacian
 
