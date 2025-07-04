@@ -547,6 +547,7 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
     A_up_inv = safe_invert_matrix(A_up)
     A_down_inv = safe_invert_matrix(A_down)
+    tot_grad=0
     for i in range(N):
         if i < N_up:
             grad = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)+ slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
