@@ -68,34 +68,6 @@ def Slaterdet(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
     return np.linalg.det(A)
 
 
-
-# +
-def Slaterinv(N,s,x1,y1,x2,y2,x3,y3,phi,chip,chim):
-    A = [[(1/math.factorial(N))*phi(x1,y1,s), (1/math.factorial(N))*chip(x1,y1,s), (1/math.factorial(N))*chim(x1,y1,s)], 
-         [(1/math.factorial(N))*phi(x2,y2,s), (1/math.factorial(N))*chip(x2,y2,s), (1/math.factorial(N))*chim(x2,y2,s)],
-         [(1/math.factorial(N))*phi(x3,y3,s), (1/math.factorial(N))*chip(x3,y3,s), (1/math.factorial(N))*chim(x3,y3,s)]] 
-    
-    return np.linalg.inv(A)
-
-def safe_invert_matrix_mb(A, rcond=1e-15):
-    """
-    Computes a pseudoinverse if A is near-singular.
-
-    Parameters:
-    - A : (N x N) NumPy array
-    - rcond : Regularization threshold
-
-    Returns:
-    - A_inv : Inverse or pseudoinverse of A
-    """
-    try:
-        return np.linalg.inv(A)
-    except np.linalg.LinAlgError:
-        print("Matrix is singular or ill-conditioned. Using pseudoinverse.")
-        return np.linalg.pinv(A, rcond=rcond)
-
-
-
 # +
 #Metropolis
 def Metropolis(x01,y01,x02,y02,x03,y03, delta, phi, chip, chim, s,counter, acc):

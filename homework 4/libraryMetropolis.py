@@ -264,56 +264,53 @@ def total_wf(N,N_up, R, sigma, b_par, b_anti, use_chi=True, return_A = True, jj=
     - A_up and A_down matrices if return_A is True
     '''
     assert N - N_up >= 0, "N_up cannot be greater than N"
-    if N != 4:
-        N_down = N - N_up
-        phi0 =  partial(single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
-        phi_plus =  partial(single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
-        phi_minus =  partial(single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
-        if return_A:
-            det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
-            det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
-        elif return_A_alt:
-            det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_minus, phi_plus, return_A = True)
-            det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_minus, phi_plus, return_A = True)
-        else:
-            det_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = False)
-            det_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = False)
-
-        jastrow_factor = 1.
-        #for i in range(N):
-            #for j in range(i+1, N):
-                #r_ij = np.linalg.norm(R[i] - R[j])
-                #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-               ## print("mb--jastrowfunct",i,j, "-th iteration")
-               ## print("rij",r_ij)
-                #bij = b_ij(spin_alignment,b_par,b_anti)
-                #jastrow_factor *= jastrow_f_ij(r_ij, spin_alignment, bij)
-                #print("jastrow",jastrow_factor)
-        #print("-------------\n mb jstrow final",jastrow_factor)
-        jastrow_log = 0.
-        for i in range(N):
-            for j in range(i+1, N):
-                r_ij = np.linalg.norm(R[i] - R[j])
-       #         print("mb rij",r_ij)
-                spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
-       #         print("spin alignment mb",spin_alignment)
-                bij = b_ij(spin_alignment, b_par, b_anti)
-                aij = a_ij(spin_alignment)
-                jastrow_log += aij * r_ij / (1 + bij * r_ij)
-        jastrow_factor = np.exp(jastrow_log)
-       # print("full jastrow mb",jastrow_factor)
-
-        if jj:
-            psi = det_up * det_down * jastrow_factor
-        else:
-            psi = det_up * det_down 
-
-        if return_A or return_A_alt:
-            return psi, det_up, det_down, A_up, A_down
-        else:
-            return psi, det_up, det_down
+    N_down = N - N_up
+    phi0 =  partial(single_particle_wf, m=0, sigma = sigma, use_chi = use_chi)
+    phi_plus =  partial(single_particle_wf, m=1, sigma = sigma, use_chi = use_chi)
+    phi_minus =  partial(single_particle_wf, m=-1, sigma = sigma, use_chi=use_chi)
+    if return_A:
+        det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = True)
+        det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = True)
+    elif return_A_alt:
+        det_up,A_up = slater_det(N_up, R[:N_up], phi0, phi_minus, phi_plus, return_A = True)
+        det_down,A_down = slater_det(N_down, R[N_up:], phi0, phi_minus, phi_plus, return_A = True)
     else:
-        raise ValueError("to be implemented.")
+        det_up = slater_det(N_up, R[:N_up], phi0, phi_plus, phi_minus, return_A = False)
+        det_down = slater_det(N_down, R[N_up:], phi0, phi_plus, phi_minus, return_A = False)
+
+    jastrow_factor = 1.
+    #for i in range(N):
+        #for j in range(i+1, N):
+            #r_ij = np.linalg.norm(R[i] - R[j])
+            #spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+            ## print("mb--jastrowfunct",i,j, "-th iteration")
+            ## print("rij",r_ij)
+            #bij = b_ij(spin_alignment,b_par,b_anti)
+            #jastrow_factor *= jastrow_f_ij(r_ij, spin_alignment, bij)
+            #print("jastrow",jastrow_factor)
+    #print("-------------\n mb jstrow final",jastrow_factor)
+    jastrow_log = 0.
+    for i in range(N):
+        for j in range(i+1, N):
+            r_ij = np.linalg.norm(R[i] - R[j])
+    #         print("mb rij",r_ij)
+            spin_alignment = 1 if (i < N_up and j < N_up) or (i >= N_up and j >= N_up) else 0
+    #         print("spin alignment mb",spin_alignment)
+            bij = b_ij(spin_alignment, b_par, b_anti)
+            aij = a_ij(spin_alignment)
+            jastrow_log += aij * r_ij / (1 + bij * r_ij)
+    jastrow_factor = np.exp(jastrow_log)
+    # print("full jastrow mb",jastrow_factor)
+
+    if jj:
+        psi = det_up * det_down * jastrow_factor
+    else:
+        psi = det_up * det_down 
+
+    if return_A or return_A_alt:
+        return psi, det_up, det_down, A_up, A_down
+    else:
+        return psi, det_up, det_down
 
 
 
@@ -448,8 +445,6 @@ def kinetic_energy_integrand_a(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     integrand of the kinetic energy operator, i.e.
     psi lapl psi
     '''
-    if N ==4:
-        raise ValueError("N=4 is not implemented yet, use N=1,2,3,5,6")
     N_down = N - N_up
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
     A_up_inv = safe_invert_matrix(A_up)
@@ -491,8 +486,6 @@ def kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     integrand of the kinetic energy operator, i.e.
     psi lapl psi
     '''
-    if N ==4:
-        raise ValueError("N=4 is not implemented yet, use N=1,2,3,5,6")
     N_down = N - N_up
     psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
     A_up_inv = safe_invert_matrix(A_up)
@@ -527,6 +520,61 @@ def kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True):
                 +kinetic_energy_integrand_b(N,N_up,R,sigma,b_par,b_anti,omega,use_chi))
 
 
+#def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True): 
+    #'''
+    #second way of computing the kinetic energy, with
+    #input:
+    #- N         : Number of particles
+    #- N_up      : Number of up-spin particles
+    #- R         : Array of shape (N, 2), each row is [x, y] of particle
+    #- sigma     : Sigma parameter for the harmonic oscillator wavefunction
+    #- b_par     : Jastrow parameter for parallel spins
+    #- b_anti    : Jastrow parameter for antiparallel spins
+    #- omega     : Harmonic oscillator frequency (default 1)
+    #- use_chi   : If True, use chi_m wavefunction, otherwise use phi_nlm
+    #output:
+    #integrand of the kinetic energy operator, i.e.
+    #-1/4 psi lapl psi + 1/4 grad psi grad psi
+    #'''
+    #first_bit = kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
+
+    #psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
+    #A_up_inv = safe_invert_matrix(A_up)
+    #A_down_inv = safe_invert_matrix(A_down)
+    #jastrow = np.zeros(2)
+    #slater = np.zeros(2)
+    #tot_grad=0
+    #for i in range(N):
+        #jastrow+= jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
+        #if i < N_up:
+            #slater += slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
+        #else:
+            #slater += slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
+    #grad = jastrow + slater
+    #tot_grad = np.dot(grad,grad)
+
+    #psi_a,det_up_a,det_down_a,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
+    #A_up_inv_a = safe_invert_matrix(A_up_a)
+    #A_down_inv_a = safe_invert_matrix(A_down_a)
+    #jastrow_a = np.zeros(2)
+    #slater_a = np.zeros(2)
+    #tot_grad_alt = 0
+    #for i in range(N):
+        #jastrow_a += jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
+        #if i < N_up:
+            #slater_a += slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
+        #else:
+            #slater_a+= slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
+
+    #grad_a = jastrow_a + slater_a
+    #tot_grad_alt += np.dot(grad_a,grad_a)
+    #out = (tot_grad + tot_grad_alt)/2
+    #if N_up == 2 and N-N_up ==2:
+        #print("N=4 case broen")
+##    return first_bit
+    #return .5*first_bit + 0.25*out
+
+
 def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True): 
     '''
     second way of computing the kinetic energy, with
@@ -544,41 +592,33 @@ def kinetic_energy_integrand_2(N,N_up,R,sigma,b_par,b_anti,omega=1,use_chi=True)
     -1/4 psi lapl psi + 1/4 grad psi grad psi
     '''
     first_bit = kinetic_energy_integrand(N,N_up,R,sigma,b_par,b_anti,omega,use_chi)
-
-    psi,det_up,det_down,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
+    _,_,_,A_up,A_down = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=True)
     A_up_inv = safe_invert_matrix(A_up)
     A_down_inv = safe_invert_matrix(A_down)
-    jastrow = np.zeros(2)
-    slater = np.zeros(2)
     tot_grad=0
     for i in range(N):
-        jastrow+= jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
+        jastrow = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
         if i < N_up:
-            slater += slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
+            slater = slater_gradient(N_up,R[:N_up],A_up_inv,i,sigma,use_chi)
         else:
-            slater += slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
-    grad = jastrow + slater
-    tot_grad = np.dot(grad,grad)
+            slater = slater_gradient(N-N_up,R[N_up:],A_down_inv,i-N_up,sigma,use_chi)
+        grad = jastrow + slater
+        tot_grad += grad[0]**2 + grad[1]**2
+#    tot_grad = np.dot(grad,grad)
 
-    psi_a,det_up_a,det_down_a,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
+    _,_,_,A_up_a,A_down_a = total_wf(N, N_up, R, sigma, b_par, b_anti, use_chi, return_A=False,return_A_alt=True)
     A_up_inv_a = safe_invert_matrix(A_up_a)
     A_down_inv_a = safe_invert_matrix(A_down_a)
-    jastrow_a = np.zeros(2)
-    slater_a = np.zeros(2)
     tot_grad_alt = 0
     for i in range(N):
-        jastrow_a += jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
+        jastrow_a  = jastrow_grad_anal(N,N_up,R,i,b_par,b_anti)
         if i < N_up:
-            slater_a += slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
+            slater_a = slater_gradient(N_up,R[:N_up],A_up_inv_a,i,sigma,use_chi,switch=True)
         else:
-            slater_a+= slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
-
-    grad_a = jastrow_a + slater_a
-    tot_grad_alt += np.dot(grad_a,grad_a)
-    print(tot_grad, tot_grad_alt)
+            slater_a = slater_gradient(N-N_up,R[N_up:],A_down_inv_a,i-N_up,sigma,use_chi,switch=True)
+        grad = jastrow_a + slater_a
+        tot_grad_alt += grad[0]**2 + grad[1]**2
     out = (tot_grad + tot_grad_alt)/2
-    if N_up == 2 and N-N_up ==2:
-        print("N=4 case broen")
 #    return first_bit
     return .5*first_bit + 0.25*out
 
