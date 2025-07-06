@@ -11,3 +11,5 @@ file content:
  - wf_check. {ipynb,py} - checks consistency between the two approaches to building wavefunctions
 
  - ex4.pdf - is the assignment
+
+All the jupyter notebooks are paired to a python file carrying the same name via the JupyText extension. This is because git does not like jupyter notebooks, especially when doing version control.
