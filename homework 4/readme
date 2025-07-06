@@ -1,0 +1,13 @@
+file content:
+
+ - Metropolis. {ipynb,py} - main notebook, contains all data analysis
+
+ - libraryMetropolis.py - contains all the code for kinetic energy calculation, as well as metropolis algorithm functions
+
+ - man_vs_machine.{ipynb,py} - contains consistency checks between the various analytical calculations here used (for the kinetic energy) and finite-difference approximations
+
+ - phi.py - contains an alternative way of computing the wavefunctions
+
+ - wf_check. {ipynb,py} - checks consistency between the two approaches to building wavefunctions
+
+ - ex4.pdf - is the assignment
